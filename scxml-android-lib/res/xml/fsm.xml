@@ -1,0 +1,357 @@
+<scxml xmlns="http://www.w3.org/2005/07/scxml" 
+	xmlns:a="http://www.nosolojava.com/android.scxml" 
+	xmlns:sc="http://www.nosolojava.com/smartCopilot.scxml"
+	xmlns:xmpp="http://www.nosolojava.com/xmpp.scxml" version="1.0">
+	<!--
+		################################
+		actions
+		################################
+		toast
+		- msg: text expression for the toast, could use a local resource with the next
+		nomenclature @string/messageName
+		- length: toast duration (optional)
+		+ Toast.LENGTH_LONG=1 (default)
+		+ Toast.LENGTH_SHORT=0
+		<a:toast msg="'Hello '+name" length="1" />
+		<a:toast msg="'@string/welcome'" length="1" />
+
+		log in debug
+		<a:log tag="tag to log" msg="message to log" />
+
+		update view status: this is used when we need to notify the view that has to change
+		its state (without changing the activity)
+		This is used also when the activity is reloaded to indicate which state should
+		render on init.
+		- stateVar: var in the datamodel which has the current view state
+		- newStateValue: in case the view state has changed it has the expression with
+		the new state
+
+		<a:updateViewState stateVar="currentViewState" />
+		<a:updateViewState stateVar="currentViewState" newStateValue="'roster.connected'"
+		/>
+
+
+		#######################
+		xmpp actions
+		#######################
+
+	-->
+	<datamodel>
+		<data id="currentActivity" expr="'.activity.LoadingActivity'" />
+		<data id="mainActivityState" expr="null" />
+		<data id="obdViewState" expr="null" />
+		<data id="selectedDevice" expr="null" />
+		<data id="selectedOBDDevice" expr="null" />
+		<data id="obdDevice" expr="null" />
+		<data id="bondedDevices" expr="new ('java.util.ArrayList');" />
+		<data id="lastBoundedDevicesList" expr="new ('java.util.ArrayList');" />
+		<data id="lastKnownLocation" expr="null" />
+		<data id="preferenceKeys" expr="['selectedDevicePref','selectedOBDDevicePref']" />
+		<data id="defaultPreferenceValues" expr="['','']" />
+		<data id="gassStationList" expr="new ('java.util.ArrayList');" />
+	</datamodel>
+	<!-- main state -->
+	<state id="main-state" initial="init-state">
+		<!-- init state -->
+		<state id="init-state">
+			<onentry>
+				<a:updateViewState stateVar="mainActivityState" newStateValue="'init-state'"/>
+	 			<sc:check-bt />
+			</onentry>
+			<transition event="system.bt.notSupported" target="bt-notSupported" />
+			<transition event="system.bt.enabled" target="bt-on-state" />
+			<transition event="system.bt.notEnabled" target="bt-off-state" />
+		</state>
+		
+		<!-- gas station transitions -->
+		<transition event="user.gl.locateGassStations">
+		    <sc:locate-gas-station minLat="_event.data.minLat" minLong="_event.data.minLong" maxLat="_event.data.maxLat" maxLong="_event.data.maxLong" fuelType="_event.data.fuelType" correlationId="_event.data.correlationId" />
+		</transition>
+		<transition event="gl.newGasStation">
+		    <send type="android" event="controller.showGassStation" >
+		        <param name="gassStation" expr="_event.data"  />
+		    </send>
+		</transition>
+		<transition event="gl.cheapestGasStation">
+		    <send type="android" event="controller.showCheapestGassStation" >
+		        <param name="gassStation" expr="_event.data"  />
+		    </send>
+		</transition>
+		<transition event="gl.noGasStationInThisArea">
+		    <send type="android" event="controller.hideLoadingGasStations" >
+		        <param name="correlationId" expr="_event.data"  />
+		    </send>
+		    		    
+		</transition>
+				
+		
+		
+		<!-- bt not supported state -->
+		<final id="bt-notSupported">
+		    <onentry>
+		        <a:updateViewState stateVar="mainActivityState" newStateValue="'bt-notSupported'"/>
+		    </onentry>
+			<transition event="activity.*.init">
+			    <a:updateViewState stateVar="mainActivityState" />
+			</transition>
+		</final>
+		<!-- bt supported state -->
+		<state id="bt-main-state">
+			<!-- init application -->
+			<onentry>
+				<a:initPreferences keys="preferenceKeys" defaultValues="defaultPreferenceValues" />
+				<sc:getLastLocationFromDB />
+			</onentry>
+			
+			<!--  manage preferences transitions -->
+			<transition event="system.preferences.newValue">
+				<if cond="_event.data.key=='selectedDevicePref'">
+					<script>
+						for(device : bondedDevices) {
+							if(device.name==_event.data.value){
+								selectedDevice=device;
+								selectedOBDDevice=device;
+							}
+						}
+						
+					</script>
+					<send type="android" event="controller.deviceView.selectDevice">
+					     <param name="selectedDevice" location="selectedDevice" />
+					     <param name="selectedOBDDevice" location="selectedOBDDevice" />
+					</send>
+				<elif cond="_event.data.key=='selectedOBDDevicePref'">
+					<script>
+						for(device : bondedDevices) {
+							if(device.name==_event.data.value){
+								selectedOBDDevice=device;
+							}
+						}
+					</script>
+					<send type="android" event="controller.deviceView.selectDevice">
+					     <param name="selectedDevice" location="selectedDevice" />
+					     <param name="selectedOBDDevice" location="selectedOBDDevice" />
+					</send>
+				</elif>
+				</if>
+			</transition>
+			
+			<!--  location transitions -->
+			<transition event="system.gl.currentLocation">
+				<assign location="lastKnownLocation" expr="_event.data"/>
+				<send type="android" event="controller.updateLastLocation">
+					<param name="lastKnownLocation" location="lastKnownLocation" />
+				</send>
+			</transition>
+
+			<!-- init activities transitions -->
+			<transition event="activity.HeaderFragment.init">
+				<a:updateViewState stateVar="mainActivityState"/>
+				<send type="android" event="controller.device.changeStatus">
+			        <param name="selectedDevice" location="selectedDevice" />
+			        <param name="selectedOBDDevice" location="selectedOBDDevice" />
+			    </send>
+			</transition>
+			<transition event="activity.LastKnownLocationFragment.init">
+			    <send type="android" event="controller.updateLastLocation">
+			   		<param name="lastKnownLocation" location ="lastKnownLocation" />
+				</send>
+			</transition>
+			<transition event="activity.CopilotFragment.init">
+			</transition>
+			<transition event="activity.ObdFragment.init">
+			    <a:updateViewState stateVar="obdViewState"/>
+			    <send type="android" event="controller.device.changeStatus">
+			        <param name="selectedDevice" location="selectedDevice" />
+			        <param name="selectedOBDDevice" location="selectedOBDDevice" />
+			    </send>
+			</transition>
+			<transition event="activity.HomeActivity.init activity.MainSingleViewActivity.init">
+			    <a:updateViewState stateVar="mainActivityState"/>
+			</transition>
+							
+			<!-- bt off substate -->
+			<state id="bt-off-state">
+				<onentry>
+					<a:updateViewState stateVar="mainActivityState" newStateValue="'bt-off-state'"/>	    
+				</onentry>
+				<transition event="system.bt.enabled" target="bt-on-state" />
+				<transition event="activity.PreferencesActivity.init">
+					<send type="android" event="controller.devices.btOff">
+					</send>	
+				</transition>
+			</state>
+			<state id="bt-on-state">
+				<onentry>
+		 			<sc:update-bonded-devices location="bondedDevices" />
+					<a:initPreferences keys="preferenceKeys" defaultValues="defaultPreferenceValues" />
+					<a:updateViewState stateVar="mainActivityState" newStateValue="'bt-on-state'"/>	
+				</onentry>
+				
+				<onexit>
+					<if cond="selectedDevice!=null">
+						<sc:get-last-known-location />
+					</if>
+					<sc:stop-location />
+				</onexit>
+				<!-- 		// TODO manage bond state changed event
+							transition event="system.bt.boundedListUpdated"
+				 -->	
+				<transition event="activity.PreferencesActivity.init">
+				    <sc:update-bonded-devices location="bondedDevices" />
+					<send type="android" event="controller.devices.updateBondedDevices">
+						<param name="bondedDevices" location="bondedDevices" />
+					</send>	
+				</transition>
+				<transition event="system.bt.notEnabled" target="bt-off-state" >
+				</transition>	
+				<transition event="system.fsm.onDestroy system.fsm.onLowMemory">
+				</transition>
+
+				<!-- bt parallel states -->
+				<parallel id="bt-parallel-states">
+					<!-- selected device transitions -->
+					<transition event="system.bt.device.connected" cond="selectedDevice!=null and selectedDevice.name==_event.data">
+						<script>selectedDevice.connected=true;</script>
+						<send type="android" event="controller.device.changeStatus">
+							<param name="selectedDevice" location="selectedDevice" />
+							<param name="selectedOBDDevice" location="selectedOBDDevice" />
+						</send>
+						<send type="scxml" target="\#_internal" event="controller.selectedDevice.connected" />
+					</transition>
+					<transition event="system.bt.device.disconnected" cond="selectedDevice!=null and selectedDevice.name==_event.data">
+						<script>selectedDevice.connected=false;</script>
+						<send type="android" event="controller.device.changeStatus">
+							<param name="selectedDevice" location="selectedDevice" />
+							<param name="selectedOBDDevice" location="selectedOBDDevice" />
+						</send>
+						<sc:get-last-known-location />
+						<sc:saveLastLocation location="lastKnownLocation" />
+						<send type="scxml" target="\#_internal" event="controller.selectedDevice.disconnected" />
+					</transition>
+					<!-- tracking states -->
+					<state id="bt-tracking-states" init="bt-tracking-off-state">
+						<state id="bt-tracking-off-state">
+							<onentry>
+								<!-- control on entry if device is already connected -->
+								<if cond="selectedDevice!=null">
+									<if cond="selectedDevice.connected">
+										<send type="scxml" target="\#_internal" event="'controller.selectedDevice.connected'" />
+									</if>
+								</if>
+							</onentry>
+							<transition event="controller.selectedDevice.connected" target="bt-tracking-on-state" />	
+							<!-- to avoid problems when fsm is restarted on tracking state -->
+							<transition event="controller.selectedDevice.disconnected">
+								<sc:get-last-known-location />
+								<sc:saveLastLocation location="lastKnownLocation" />
+							</transition>
+						</state>
+						<state id="bt-tracking-on-state">
+							<onentry>
+								<sc:start-location />
+							</onentry>
+							<onexit>
+								<sc:stop-location />
+							</onexit>
+							<transition event="controller.selectedDevice.disconnected" target="bt-tracking-off-state" />
+						</state>
+					</state>
+					<!-- obd states -->
+					<state id="obd-states" initial="obd-idle">
+						<!-- send result text to obd screen (debug) -->				    
+					    <transition event="obd.result" type="internal">
+							<send type="android" event="controller.obd.updateResult">
+								<param name="result" expr="_event.data" />
+							</send>
+						</transition>
+						<transition event="system.bt.device.disconnected" 
+							cond="selectedOBDDevice!=null and selectedOBDDevice.name==_event.data" 
+							target="obd-idle" type="internal">
+							<send type="android" event="controller.device.changeStatus">
+								<param name="selectedDevice" location="selectedDevice" />
+								<param name="selectedOBDDevice" location="selectedOBDDevice" />
+							</send>
+						</transition>	
+						<transition event="obd.readCommand" type="internal">
+							<sc:obdReadCmd />
+						</transition>
+						<transition event="user.obd.cancelRFCOMM">
+							<sc:closeRFCOMM />
+						</transition>
+						<transition event="bt.RFCOMM.closed" target="obd-idle" type="internal" />
+						
+						<!-- obd disconnected -->
+						<state id="obd-idle">
+						    <onentry>
+						        <a:updateViewState stateVar="obdViewState" newStateValue="'obd.state.idle'" />
+						    </onentry>
+							<transition event="user.obd.openConnection" target="obd-initiating" type="internal">
+								<sc:openRFCOMM device="selectedOBDDevice" />
+							</transition>
+						</state>
+						<!-- obd connecting -->
+						<state id="obd-initiating">
+						    <onentry>
+						        <a:updateViewState stateVar="obdViewState" newStateValue="'obd.state.connecting'" />
+						    </onentry>
+							<transition event="bt.error.openRFCOMM" target="obd-idle" type="internal">
+								<send type="android" event="controller.rfcommError">
+									<param name="exception" expr="_event.data" />
+								</send>
+							</transition>
+							<transition event="obd.connected" target="obd-ready-for-input" type="internal"/>
+						</state>
+						<state id="obd-connected" initial="obd-processing">
+						    <onentry>
+						       <sc:obdReadCmd />
+						    </onentry>
+						    <transition event="user.obd.sendCommand" type="internal">
+								<sc:obdSendCmd cmd="_event.data" />
+							</transition>
+						    <transition event="obd.commandSent" target="obd-processing" type="internal"/>
+						    <transition event="obd.readyForInput" target="obd-ready-for-input" type="internal">
+				   	   			<send type="android" event="controller.obd.readyForInput" />
+						    	<sc:obdReadCmd />
+				   	   			<!-- TODO manage command result -->
+						   	</transition>
+						    
+							<!-- obd has sent char &gt; -->
+							<state id="obd-ready-for-input">
+							    <onentry>
+							        <a:updateViewState stateVar="obdViewState" newStateValue="'obd.state.readyForInput'" />
+							    </onentry>
+							</state>
+							<!-- reading socket -->
+							<state id="obd-processing">
+								<onentry>
+							      <a:updateViewState stateVar="obdViewState" newStateValue="'obd.state.processing'" />
+							   </onentry>
+						   		<transition event="obd.error.nosocket obd.error.noInputStream" target="obd-idle" type="internal"/>
+							</state>		
+						</state>				
+					</state>
+				</parallel>
+					
+				<!-- manage other device connection status -->
+				<transition event="system.bt.device.connected system.bt.device.disconnected">
+					<script>
+						connected= _event.name=='system.bt.device.connected';
+						for(device : bondedDevices) {
+							   if (device.name==_event.data){
+							   	device.connected=connected;
+							   } 
+						}
+						if(selectedDevice!=null and selectedDevice.name==_event.data){
+							selectedDevice.connected=connected;
+						}
+					</script>
+		
+					<send type="android" event="controller.device.changeStatus">
+						<param name="selectedDevice" location="selectedDevice" />
+						<param name="selectedOBDDevice" location="selectedOBDDevice" />
+					</send>
+				</transition>
+				</state>
+			</state>
+		</state>
+</scxml>

@@ -1,0 +1,29 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.nosolojava.fsm.android"
+    android:versionCode="1"
+    android:versionName="1.0" >
+
+    <uses-sdk
+        android:minSdkVersion="8"
+        android:targetSdkVersion="17" />
+
+    <!--
+                <meta-data
+            android:name="scxml"
+            android:resource="@xml/state_machine" />
+    -->
+    <!--
+        <meta-data
+            android:name="fsmActionParser_1"
+            android:value=".action.QuicktubeActionParser" />
+    -->
+
+    <application />
+
+    <!-- fsm service -->
+<!--     <service android:name="com.nosolojava.android.fsm.service.FSMServiceImpl" /> -->
+
+    <application>
+    </application>
+
+</manifest>

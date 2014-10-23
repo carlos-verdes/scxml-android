@@ -1,0 +1,114 @@
+<scxml xmlns="http://www.w3.org/2005/07/scxml" xmlns:a="http://www.nosolojava.com/android.scxml"
+	xmlns:media="http://www.nosolojava.com/media.scxml" version="1.0"
+	initial="videoStates">
+	<!--
+		################################
+		actions
+		################################
+		toast
+		- msg: text expression for the toast
+		- length: toast duration (optional)
+		+ Toast.LENGTH_LONG=1 (default)
+		+ Toast.LENGTH_SHORT=0
+		<a:toast msg="'Entering state XXX'" />
+		<a:toast msg="'Hello '+name" length="1" />
+
+		launch activity
+		- class: activity class to be launched
+		- flag: activity launch flag (optional)
+		+ FLAG_ACTIVITY_CLEAR_TOP=4000000 (default)
+		+ FLAG_ACTIVITY_SINGLE_TOP=20000000
+		+ etc.
+		<a:launchActivity class="com.nosolojava.Activity" />
+		<a:launchActivity class="com.nosolojava.Activity" flag="20000000"
+
+		finish current activity
+		<a:finishCurrentActivity />
+		/>
+	-->
+	<datamodel>
+		<data id="_currentActivity" expr="null" />
+	</datamodel>
+	<!-- idle state -->
+	<parallel id="applicationParallelStates">
+		<!-- activity states -->
+		<state id="activity">
+			<state id="creating">
+				<transition event="activity.start" target="starting" />
+			</state>
+			<state id="starting">
+				<transition event="activity.resume" target="resuming" />
+				<transition event="activity.stop" target="stopping" />
+			</state>
+			<state id="resuming">
+				<transition event="activity.run" target="running" />
+				<transition event="activity.pause" target="pausing" />
+			</state>
+			<state id="running">
+				<transition event="activity.pause" target="pausing" />
+			</state>
+			<state id="restarting">
+				<transition event="activity.start" target="starting" />
+			</state>
+			<state id="pausing">
+				<transition event="activity.resume" target="resuming" />
+				<transition event="activity.stop" target="stopping" />
+			</state>
+			<state id="stopping">
+				<transition event="activity.destroy" target="destroying" />
+				<transition event="activity.restart" target="restarting" />
+			</state>
+			<final id="destroying">
+			</final>
+		</state>
+		<!-- video states -->
+		<state id="videoStates" initial="idle">
+			<state id="idle">
+				<onentry>
+					<log label="FSM" expr="'state idle'" />
+				</onentry>
+				<transition event="activity.loadVideo" target="preparing">
+					<send type="android" event="media.prepare">
+						<param name="uri" expr="_event.data" />
+					</send>
+				</transition>
+				<transition event="media.prepared" target="playing">
+					<send type="android" event="media.start" />
+				</transition>
+			</state>
+			<state id="preparing">
+				<onentry>
+					<log label="FSM" expr="'state preparing'" />
+				</onentry>
+				<transition event="media.prepared" target="playing">
+					<send type="android" event="media.start" />
+				</transition>
+			</state>
+			<state id="playing">
+				<onentry>
+					<log label="FSM" expr="'state playing'" />
+				</onentry>
+				<transition event="activity.stop" target="stopped">
+					<send type="android" event="media.stop" />
+				</transition>
+			</state>
+			<state id="paused">
+			</state>
+			<state id="stopped">
+				<onentry>
+					<log label="FSM" expr="'state stopped'" />
+				</onentry>
+				<transition event="activity.startVideo" target="playing">
+					<send type="android" event="media.start">
+					</send>
+				</transition>
+			</state>
+			<transition event="activity.exitVideoActivity error.*"
+				target="idle">
+			</transition>
+			<transition event="activity.resume">
+				<assign location="currentActivity" expr="_event.data.activity" />
+			</transition>
+		</state>
+	</parallel>
+</scxml>

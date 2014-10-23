@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Android_SM_lib</string>
+    <string name="loading_fsm">Loading fsm&#8230;</string>
+    <string name="error">Error</string>
+    <string name="application_error">Application error, trying to recover&#8230;</string>
+    <string name="accept">Accept</string>
+    <string name="close">Close</string>
+</resources>
