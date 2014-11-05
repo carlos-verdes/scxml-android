@@ -2,18 +2,18 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.nosolojava.fsm</groupId>
-	<artifactId>Android_SCXML_lib</artifactId>
+	<artifactId>scxml-android-lib</artifactId>
 	<name>Android library to use SCXML</name>
 	<version>1.0.1-SNAPSHOT</version>
 	<packaging>apklib</packaging>
 	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding> 
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 	<dependencies>
 		<!-- scxml -->
 		<dependency>
 			<groupId>com.nosolojava.fsm</groupId>
-			<artifactId>BasicStateMachineImpl</artifactId>
+			<artifactId>scxml-java-implementation</artifactId>
 			<version>1.0.1-SNAPSHOT</version>
 			<exclusions>
 				<exclusion>
@@ -38,11 +38,27 @@
 			<artifactId>support-v4</artifactId>
 			<version>r7</version>
 		</dependency>
+		<!-- aether -->
+		<!-- 
+		<dependency>
+			<groupId>org.eclipse.aether</groupId>
+			<artifactId>aether-api</artifactId>
+			<version>1.0.0.v20140518</version>
+		</dependency>
+		 -->
 		<!-- smart image -->
 		<dependency>
 			<groupId>com.loopj.android</groupId>
 			<artifactId>android-smart-image-view</artifactId>
 			<version>1.0.0</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/android-smart-image-view-1.0.0.jar</systemPath>
+		</dependency>
+		<!-- bug sense -->
+		<dependency>
+			<groupId>com.splunk.mint</groupId>
+			<artifactId>mint</artifactId>
+			<version>4.0.4</version>
 		</dependency>
 	</dependencies>
 	<build>
@@ -53,7 +69,7 @@
 				<plugin>
 					<groupId>com.jayway.maven.plugins.android.generation2</groupId>
 					<artifactId>android-maven-plugin</artifactId>
-					<version>3.6.1</version>
+					<version>3.8.0</version>
 					<extensions>true</extensions>
 				</plugin>
 			</plugins>
@@ -96,4 +112,12 @@
 			</plugin>
 		</plugins>
 	</build>
+	<repositories>
+		<!-- bugsence repo -->
+		<repository>
+			<id>Splunk MINT repo</id>
+			<name>The Splunk MINT Repository</name>
+			<url>https://mint.splunk.com/maven/</url>
+		</repository>
+	</repositories>
 </project>

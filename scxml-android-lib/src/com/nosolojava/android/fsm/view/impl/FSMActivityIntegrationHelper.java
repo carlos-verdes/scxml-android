@@ -21,7 +21,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.bugsense.trace.BugSenseHandler;
+import com.splunk.mint.Mint;
 import com.nosolojava.android.fsm.io.AndroidBroadcastIOProcessor;
 import com.nosolojava.android.fsm.io.FSM_ACTIONS;
 import com.nosolojava.android.fsm.io.FSM_EXTRAS;
@@ -90,7 +90,7 @@ public class FSMActivityIntegrationHelper implements FSMActivityIntegration {
 
 		Activity activity = this.getAndroidContext();
 		//init bug sense
-		BugSenseHandler.initAndStartSession(activity, "f29095fc");
+		Mint.initAndStartSession(activity, "f29095fc");
 
 		int viewId = this.getCurrentViewId();
 		Uri fsmUri = this.getFSMUri();

@@ -20,13 +20,14 @@ import com.nosolojava.fsm.model.StateMachineModel;
 import com.nosolojava.fsm.model.config.exception.ConfigurationException;
 import com.nosolojava.fsm.parser.XppActionParser;
 import com.nosolojava.fsm.parser.XppStateMachineParser;
+import com.nosolojava.fsm.parser.exception.SCXMLParserException;
 import com.nosolojava.fsm.runtime.executable.Executable;
 
 public class AndroidXppStateMachineParser extends XppStateMachineParser {
 
 	private final android.content.Context androidContext;
 
-	public AndroidXppStateMachineParser(android.content.Context androidContext) {
+	public AndroidXppStateMachineParser(android.content.Context androidContext) throws ConfigurationException {
 		super();
 		this.androidContext = androidContext;
 	}
@@ -52,7 +53,7 @@ public class AndroidXppStateMachineParser extends XppStateMachineParser {
 	}
 
 	@Override
-	public StateMachineModel parseScxml(URI source) throws ConfigurationException, IOException {
+	public StateMachineModel parseScxml(URI source) throws ConfigurationException, IOException, SCXMLParserException {
 
 		StateMachineModel result = null;
 		if (isAndroidXMLSource(source)) {
