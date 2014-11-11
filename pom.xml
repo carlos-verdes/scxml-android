@@ -27,6 +27,12 @@
 					</exclusion>
 				</exclusions>
 			</dependency>
+			<!-- scxml android lib -->
+			<dependency>
+				<artifactId>scxml-android-lib</artifactId>
+				<groupId>${project.groupId}</groupId>
+				<version>${project.version}</version>
+			</dependency>
 			<!-- android -->
 			<dependency>
 				<groupId>com.google.android</groupId>
@@ -38,12 +44,6 @@
 				<groupId>com.google.android</groupId>
 				<artifactId>support-v4</artifactId>
 				<version>r7</version>
-			</dependency>
-			<!-- smart image -->
-			<dependency>
-				<groupId>com.loopj.android</groupId>
-				<artifactId>android-smart-image-view</artifactId>
-				<version>1.0.0</version>
 			</dependency>
 			<!-- bugsense -->
 			<dependency>
@@ -61,8 +61,39 @@
 				<plugin>
 					<groupId>com.jayway.maven.plugins.android.generation2</groupId>
 					<artifactId>android-maven-plugin</artifactId>
-					<version>4.0.0-rc.2</version>
 					<extensions>true</extensions>
+					<version>3.8.2</version>
+				</plugin>
+				<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+											com.jayway.maven.plugins.android.generation2
+										</groupId>
+										<artifactId>
+											android-maven-plugin
+										</artifactId>
+										<versionRange>
+											[3.8.2,)
+										</versionRange>
+										<goals>
+											<goal>consume-aar</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
 				</plugin>
 			</plugins>
 		</pluginManagement>
@@ -71,6 +102,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.2</version>
 				<configuration>
 					<source>1.6</source>
 					<target>1.6</target>
@@ -82,6 +114,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
+				<version>2.4</version>
 				<executions>
 					<execution>
 						<id>attach-sources</id>
@@ -112,4 +145,7 @@
 			<url>https://mint.splunk.com/maven/</url>
 		</repository>
 	</repositories>
+	<modules>
+		<module>scxml-android-lib</module>
+	</modules>
 </project>

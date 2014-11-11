@@ -62,19 +62,24 @@ public class MetadataUtil {
 
 	public static <T> List<T> instantiateObjects(String prefix, Context ctx) throws ClassNotFoundException,
 			NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-		int i = 1;
-		Bundle metadata = getContextMetadata(ctx);
-		String classname = metadata.getString(prefix + i);
+		
 		List<T> result = new ArrayList<T>();
 
-		String packageName = getAppPackage(ctx);
-		T parser;
-		while (classname != null) {
-			parser = MetadataUtil.instantiateObject(classname, packageName);
-			result.add(parser);
+		int i = 1;
+		Bundle metadata = getContextMetadata(ctx);
+		if(metadata!=null){
+			String classname = metadata.getString(prefix + i);
 
-			i++;
-			classname = metadata.getString(prefix + i);
+			String packageName = getAppPackage(ctx);
+			T parser;
+			while (classname != null) {
+				parser = MetadataUtil.instantiateObject(classname, packageName);
+				result.add(parser);
+
+				i++;
+				classname = metadata.getString(prefix + i);
+			}
+			
 		}
 
 		return result;

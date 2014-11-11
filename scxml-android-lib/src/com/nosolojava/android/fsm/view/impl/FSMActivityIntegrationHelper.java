@@ -25,6 +25,7 @@ import com.splunk.mint.Mint;
 import com.nosolojava.android.fsm.io.AndroidBroadcastIOProcessor;
 import com.nosolojava.android.fsm.io.FSM_ACTIONS;
 import com.nosolojava.android.fsm.io.FSM_EXTRAS;
+import com.nosolojava.android.fsm.service.FSMServiceImpl;
 import com.nosolojava.android.fsm.util.AndroidUtils;
 import com.nosolojava.android.fsm.view.FSMActivityIntegration;
 import com.nosolojava.android.fsm.view.binding.FSMViewBindingHandler;
@@ -131,7 +132,9 @@ public class FSMActivityIntegrationHelper implements FSMActivityIntegration {
 		}
 
 		// intent to start the fsm
-		Intent startFSMintent = new Intent(FSM_ACTIONS.INIT_FSM_SESSION.toString(), fsmUri);
+		Intent startFSMintent = new Intent(this.getAndroidContext(),FSMServiceImpl.class);
+		startFSMintent.setAction(FSM_ACTIONS.INIT_FSM_SESSION.toString());
+		startFSMintent.setData(fsmUri);
 		activity.startService(startFSMintent);
 
 	}
