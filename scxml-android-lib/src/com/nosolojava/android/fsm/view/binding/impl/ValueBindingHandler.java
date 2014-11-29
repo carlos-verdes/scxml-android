@@ -1,6 +1,5 @@
 package com.nosolojava.android.fsm.view.binding.impl;
 
-import java.io.Serializable;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -12,6 +11,7 @@ import org.xmlpull.v1.XmlPullParser;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Parcelable;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -21,12 +21,12 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.loopj.android.image.SmartImageView;
-import com.nosolojava.android.fsm.bean.AssignData;
-import com.nosolojava.android.fsm.bean.AssignDataSerializable;
+import com.nosolojava.android.fsm.bean.AssignParcelableString;
 import com.nosolojava.android.fsm.io.AndroidBroadcastIOProcessor;
 import com.nosolojava.android.fsm.io.FSM_ACTIONS;
 import com.nosolojava.android.fsm.io.FSM_EXTRAS;
 import com.nosolojava.android.fsm.util.AndroidUtils;
+import com.nosolojava.fsm.runtime.ContextInstance;
 
 /**
  * <p>
@@ -57,6 +57,8 @@ public class ValueBindingHandler extends AbstractFSMViewBindingHandler {
 	public static final String INIT_EVENT = "view.valueBinding.init";
 	protected static final String NEW_VAL_EVENT = "view.valueBinding.newVal";
 	private static final String LOG_TAG = "ValueBind";
+
+	private ContextInstance lastContextInstance = null;
 
 	private AtomicBoolean userHasEdited = new AtomicBoolean(false);
 
@@ -132,9 +134,9 @@ public class ValueBindingHandler extends AbstractFSMViewBindingHandler {
 						if (!value.equals(lastString.toString())) {
 
 							Log.d("TEST", "Sending new val: " + location + "= |" + value + "|");
-							Serializable data = new AssignDataSerializable(location, value);
+							Parcelable data = new AssignParcelableString(location, value);
 							ValueBindingHandler.this.userHasEdited.set(true);
-							AndroidBroadcastIOProcessor.sendMessageToFSM(currentActivity, fsmSessionId, NEW_VAL_EVENT,
+							AndroidBroadcastIOProcessor.sendMessageToFSM(fsmSessionId, currentActivity, NEW_VAL_EVENT,
 									data);
 
 						} else {
@@ -150,17 +152,17 @@ public class ValueBindingHandler extends AbstractFSMViewBindingHandler {
 						String value = s != null ? s.toString() : "NULL";
 						this.lastString = value;
 
-						//						Log.d("TEST", "beforeTextChanged " + editView.getId() + " : |" + s.toString() + "|");
+						// Log.d("TEST", "beforeTextChanged " + editView.getId() + " : |" + s.toString() + "|");
 					}
 
 					@Override
 					public void afterTextChanged(Editable s) {
 
-						//						Log.d("TEST",
-						//								"afterTextChanged: " + editView.getId() + "|" + s.toString() + "|, length: "
-						//										+ s.length() + ", drawableState: " + editView.getDrawableState()
-						//										+ ", editableText: |" + editView.getEditableText() + "|, freeze?: "
-						//										+ editView.getFreezesText() + ", text: |" + editView.getText() + "|");
+						// Log.d("TEST",
+						// "afterTextChanged: " + editView.getId() + "|" + s.toString() + "|, length: "
+						// + s.length() + ", drawableState: " + editView.getDrawableState()
+						// + ", editableText: |" + editView.getEditableText() + "|, freeze?: "
+						// + editView.getFreezesText() + ", text: |" + editView.getText() + "|");
 
 					}
 				};
@@ -189,13 +191,8 @@ public class ValueBindingHandler extends AbstractFSMViewBindingHandler {
 		CopyOnWriteArraySet<String> locations = new CopyOnWriteArraySet<String>(textValueBindingMap.keySet());
 		locations.addAll(this.smartImageValueBindingMap.keySet());
 		locations.addAll(this.normalImageValueBindingMap.keySet());
-		Intent intent = new Intent(FSM_ACTIONS.INIT_FSM_ASSIGN.toString());
-		intent.putExtra(FSM_EXTRAS.SESSION_ID.toString(), fsmSessionId);
-		intent.putExtra(FSM_EXTRAS.CONTENT.toString(), locations);
-		
-		//send event to fsm service to get the current datamodel info
-		activity.startService(intent);
 
+		this.lastContextInstance = null;
 	}
 
 	@Override
@@ -225,88 +222,126 @@ public class ValueBindingHandler extends AbstractFSMViewBindingHandler {
 	public boolean handleFSMIntent(Intent intent) {
 
 		boolean handled = false;
-		if (FSM_ACTIONS.FSM_ASSIGN.toString().equals(intent.getAction())) {
+		if (FSM_ACTIONS.FSM_NEW_SESSION_CONFIG.toString().equals(intent.getAction())) {
 			handled = true;
-			AssignData assignData = (AssignData) intent.getExtras().get(FSM_EXTRAS.CONTENT.toString());
 
-			String location = assignData.getName();
+			// get the new config
+			ContextInstance newContextInstance = (ContextInstance) intent.getExtras()
+					.get(FSM_EXTRAS.CONTENT.toString());
 
-			if (this.smartImageValueBindingMap.containsKey(location)) {
-
-				loadSmartImages(assignData, location);
-
-			}
-			if (this.normalImageValueBindingMap.containsKey(location)) {
-
-				loadNormalImages(assignData, location);
-
-			}
-			if (this.textValueBindingMap.containsKey(location)) {
-				Set<TextView> views = this.textValueBindingMap.get(location);
-				String stringValue = extractStringValue(assignData);
-
-				String currentValue;
-				for (TextView view : views) {
-					currentValue = view.getText().toString();
-
-					//avoid changes if the value is the same
-					if (!currentValue.equals(stringValue)) {
-						//avoid if this control has focus and the user has already edit (this is necesary due to a bug in textwatcher which sends more events than expected
-						if (!view.hasFocus() || !userHasEdited.get()) {
-
-							//remove text watcher to avoid loops
-							TextWatcher watcher = this.textWatchers.get(view);
-
-							if (watcher != null) {
-								view.removeTextChangedListener(watcher);
-							}
-
-							Log.d("TEST", "!!! CHANGED!!! oldVal: |" + currentValue + "|, newVal: |" + stringValue
-									+ "|");
-							//update value
-							view.setText(stringValue);
-
-							//add again the watcher
-							if (watcher != null) {
-								view.addTextChangedListener(watcher);
-							}
-						}
-					}
-				}
-			}
+			updateView(newContextInstance);
 		}
 
 		return handled;
 	}
 
-	protected void loadNormalImages(AssignData assignData, String location) {
-		Set<ImageView> imageViews = this.normalImageValueBindingMap.get(location);
-		String uri = extractStringValue(assignData);
+	@Override
+	public void updateView(ContextInstance newContextInstance) {
+		// update smart images
+		updateSmartImages(newContextInstance, lastContextInstance);
 
-		try {
-			AndroidUtils.loadImageFromUrls(uri, imageViews);
+		// update normal images
+		updateNormalImages(newContextInstance, lastContextInstance);
 
-		} catch (Exception e) {
-			Log.w(LOG_TAG, "Error downloading image", e);
-		}
+		// update text views
+		updateTextViews(newContextInstance, lastContextInstance);
+
+		this.lastContextInstance = newContextInstance;
 	}
 
-	protected void loadSmartImages(AssignData assignData, String location) {
-		Set<SmartImageView> imageViews = this.smartImageValueBindingMap.get(location);
-		String uri = extractStringValue(assignData);
-		for (SmartImageView sImageView : imageViews) {
-			sImageView.setImageUrl(uri);
+	private void updateSmartImages(ContextInstance newContextInstance, ContextInstance oldContextInstance) {
+		String key;
+		String newUrl;
+		// for each smart image
+		for (Entry<String, Set<SmartImageView>> entry : this.smartImageValueBindingMap.entrySet()) {
+			key = entry.getKey();
+			newUrl = newContextInstance.getDataByName(key);
+
+			// if context resolves the key
+			if (newUrl != null && !"".equals(newUrl)) {
+				// check if the value has changed
+				if (oldContextInstance == null || !oldContextInstance.getDataByName(key).equals(newUrl)) {
+					// load new uris
+					for (SmartImageView smartImageView : entry.getValue()) {
+						smartImageView.setImageUrl(newUrl);
+					}
+				}
+			}
+
 		}
+
 	}
 
-	protected String extractStringValue(AssignData assignData) {
-		Object value = assignData.getValue();
-		if (value == null) {
-			value = "";
+	protected void updateNormalImages(ContextInstance newContextInstance, ContextInstance oldContextInstance) {
+		String key;
+		String newUrl;
+		// for each normal image
+		for (Entry<String, Set<ImageView>> entry : this.normalImageValueBindingMap.entrySet()) {
+			key = entry.getKey();
+			newUrl = newContextInstance.getDataByName(key);
+
+			// if context resolves the key
+			if (newUrl != null && !"".equals(newUrl)) {
+				// check if the value has changed
+				if (oldContextInstance == null || !oldContextInstance.getDataByName(key).equals(newUrl)) {
+					// load new uris
+					try {
+						AndroidUtils.loadImageFromUrls(newUrl, entry.getValue());
+
+					} catch (Exception e) {
+						Log.w(LOG_TAG, "Error downloading image", e);
+					}
+				}
+			}
+
 		}
 
-		String stringValue = value.toString();
-		stringValue = AndroidUtils.getText(stringValue, currentActivity);
-		return stringValue;
 	}
+
+	private void updateTextViews(ContextInstance newContextInstance, ContextInstance oldContextInstance) {
+
+		String key;
+		String oldValue;
+		String newValue;
+		// for each text view
+		for (Entry<String, Set<TextView>> entry : this.textValueBindingMap.entrySet()) {
+			key = entry.getKey();
+			newValue = newContextInstance.getDataByName(key);
+
+			// if context resolves the key
+			if (newValue != null && !"".equals(newValue)) {
+				// check if the value has changed
+
+				if (oldContextInstance == null || oldContextInstance.getDataByName(key) == null
+						|| !oldContextInstance.getDataByName(key).equals(newValue)) {
+					oldValue = oldContextInstance != null ? (String) oldContextInstance.getDataByName(key) : null;
+
+					// load new text value
+					for (TextView textView : entry.getValue()) {
+						if (!textView.hasFocus() || !this.userHasEdited.get()) {
+
+							// remove text watcher to avoid loops
+							TextWatcher watcher = this.textWatchers.get(textView);
+							if (watcher != null) {
+								textView.removeTextChangedListener(watcher);
+							}
+
+							Log.d("TEST", "!!! CHANGED!!! oldVal: |" + oldValue + "|, newVal: |" + newValue + "|");
+							// update value
+							textView.setText(newValue);
+
+							// add again the watcher
+							if (watcher != null) {
+								textView.addTextChangedListener(watcher);
+							}
+						}
+
+					}
+				}
+			}
+
+		}
+
+	}
+
 }

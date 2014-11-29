@@ -1,10 +1,10 @@
 package com.nosolojava.android.fsm.service;
 
 import java.io.Serializable;
-import java.net.URI;
 
 import android.app.Service;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -13,8 +13,8 @@ import android.os.Parcelable;
 import android.util.Log;
 
 import com.nosolojava.android.fsm.io.AndroidBroadcastIOProcessor;
-import com.nosolojava.android.fsm.io.FSM_EXTRAS;
 import com.nosolojava.android.fsm.io.MESSAGE_DATA;
+import com.nosolojava.android.fsm.util.AndroidUtils;
 
 public abstract class AndroidFSMServiceTemplate extends Service {
 
@@ -22,7 +22,7 @@ public abstract class AndroidFSMServiceTemplate extends Service {
 	protected IncomingHandler handler;
 
 	protected String sessionId;
-	protected URI fsmUri;
+	protected Uri fsmUri;
 
 	
 	protected abstract void handleMessage(String messageName, String sessionId, android.os.Message message);
@@ -35,8 +35,10 @@ public abstract class AndroidFSMServiceTemplate extends Service {
 
 	@Override
 	public IBinder onBind(Intent intent) {
-		this.sessionId = intent.getStringExtra(FSM_EXTRAS.SESSION_ID.toString());
-		this.fsmUri = (URI) intent.getSerializableExtra(FSM_EXTRAS.SOURCE_URI.toString());
+		
+		
+		this.fsmUri = intent.getData();
+		this.sessionId = AndroidUtils.getFSMSessionFromUri(this.fsmUri);
 
 		return this.messenger.getBinder();
 	}

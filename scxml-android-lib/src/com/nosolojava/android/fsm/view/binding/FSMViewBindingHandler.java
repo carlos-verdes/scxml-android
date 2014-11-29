@@ -2,6 +2,8 @@ package com.nosolojava.android.fsm.view.binding;
 
 import java.io.Serializable;
 
+import com.nosolojava.fsm.runtime.ContextInstance;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.view.View;
@@ -65,5 +67,11 @@ public interface FSMViewBindingHandler {
 	 * @return true if this handler has been used, false otherwise
 	 */
 	public boolean handleFSMIntent(Intent intent);
+	
+	/**
+	 * Updates the view with the new config from FSM
+	 * @param newContextInstance
+	 */
+	public void updateView(ContextInstance newContextInstance);
 
 }

@@ -1,5 +1,5 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:bind="http://nosolojava.com/fsmViewBinding"
+    xmlns:fsm="http://nosolojava.com/fsmViewBinding"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -10,14 +10,27 @@
     tools:ignore="MissingPrefix" >
 
     <TextView
+        android:id="@+id/mainHeaderText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="From fsm:"
         />
 
     <TextView
+        android:id="@+id/welcomeText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        bind:value="salute" />
+        android:layout_toRightOf="@id/mainHeaderText"
+        fsm:value="welcome" />
+    
+        <Button
+        android:id="@+id/sign_in_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/mainHeaderText"
+        android:layout_centerHorizontal="true"
+        android:text="disconnect"
+        fsm:onclick="disconnect" />
+    
 
 </RelativeLayout>

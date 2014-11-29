@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 
 import com.nosolojava.android.fsm.io.AndroidBroadcastIOProcessor;
+import com.nosolojava.fsm.runtime.ContextInstance;
 
 /**
  * Send an event to FSM when a View has a binding attribute "onclick". The event name is the value of the attribute.
@@ -49,7 +50,7 @@ public class OnclickBindingHandler extends AbstractFSMViewBindingHandler {
 		@Override
 		public void onClick(View v) {
 			if (currentActivity != null) {
-				AndroidBroadcastIOProcessor.sendMessageToFSM(currentActivity, fsmSessionId, eventName);
+				AndroidBroadcastIOProcessor.sendMessageToFSM(fsmSessionId, currentActivity, eventName);
 			}
 		}
 	}
@@ -91,6 +92,11 @@ public class OnclickBindingHandler extends AbstractFSMViewBindingHandler {
 	@Override
 	public boolean handleFSMIntent(Intent intent) {
 		return false;
+	}
+	
+	@Override
+	public void updateView(ContextInstance newContextInstance) {
+		
 	}
 
 }

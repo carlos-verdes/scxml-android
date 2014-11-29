@@ -18,36 +18,44 @@ import android.util.Log;
 
 import com.nosolojava.android.fsm.io.AndroidBroadcastIOProcessor;
 import com.nosolojava.android.fsm.io.MESSAGE_DATA;
-import com.nosolojava.android.fsm.service.AndroidFSMContext;
 import com.nosolojava.android.fsm.service.FSMServiceImpl;
 import com.nosolojava.android.fsm.util.AndroidUtils;
+import com.nosolojava.fsm.impl.runtime.basic.BasicEvent;
 import com.nosolojava.fsm.impl.runtime.basic.PlatformEvents;
 import com.nosolojava.fsm.impl.runtime.executable.externalcomm.basic.AbstractBasicInvokeHandler;
 import com.nosolojava.fsm.runtime.Context;
+import com.nosolojava.fsm.runtime.Event;
 import com.nosolojava.fsm.runtime.StateMachineEngine;
 import com.nosolojava.fsm.runtime.executable.externalcomm.IOProcessor;
 import com.nosolojava.fsm.runtime.executable.externalcomm.InvokeInfo;
 import com.nosolojava.fsm.runtime.executable.externalcomm.Message;
 
 /**
- * Used to invoke android services from fsm:
- * <br/>Example: {@code <invoke id="chatServiceInvokeId" type="service" autoforward="false" src="action:com.nosolojava.chat.START_SERVICE_ACTION" />}
- * <br/> The src will be used to create the intent, see: {@link AndroidUtils#createIntentFromURI(InvokeInfo, Context)}.
- * <br/> the id can be used later to send events to this service (that's the reason why this class implements also IOProcessor.
- * <p>To send events to the invoked service use the scxml send with the next arguments:
- * <ul><li>type: always invoked-service</li>
- *     <li>event: the event name to be handled
- *     <li>target: pass the id in the fragment part (the part after # in uris)</li>
+ * Used to invoke android services from fsm: <br/>
+ * Example:
+ * {@code <invoke id="chatServiceInvokeId" type="service" autoforward="false" src="action:com.nosolojava.chat.START_SERVICE_ACTION" />}
+ * <br/>
+ * The src will be used to create the intent, see: {@link AndroidUtils#createIntentFromURI(InvokeInfo, Context)}. <br/>
+ * the id can be used later to send events to this service (that's the reason why this class implements also
+ * IOProcessor.
+ * <p>
+ * To send events to the invoked service use the scxml send with the next arguments:
+ * <ul>
+ * <li>type: always invoked-service</li>
+ * <li>event: the event name to be handled
+ * <li>target: pass the id in the fragment part (the part after # in uris)</li>
  * </ul>
- * Example: {@code <send type="invoked-service" event="controller.action.login" namelist="username password" target="#chatServiceInvokeId" />}
+ * Example:
+ * {@code <send type="invoked-service" event="controller.action.login" namelist="username password" target="#chatServiceInvokeId" />}
  * 
- * <p>Finally in the called service the message can be handled getting the event name and data from the {@link android.os.Message} like the next code:
- * {@code 
- * 		<p>public void handleMessage(android.os.Message msg) {
- *			<br/>  Bundle messageData = msg.getData();
- *			<br/>  String messageName = messageData.getString(MESSAGE_DATA.NAME.toString());
- *			<br/>  String sessionId = messageData.getString(MESSAGE_DATA.SESSION_ID.toString());
- *          <br/>  HashMap<String, String> messageBody= (HashMap<String, String>) messageData.getSerializable(MESSAGE_DATA.CONTENT.toString());
+ * <p>
+ * Finally in the called service the message can be handled getting the event name and data from the
+ * {@link android.os.Message} like the next code: {@code  <p> public void handleMessage(android.os.Message msg) <br/>
+ * Bundle messageData = msg.getData(); <br/>
+ * String messageName = messageData.getString(MESSAGE_DATA.NAME.toString()); <br/>
+ * String sessionId = messageData.getString(MESSAGE_DATA.SESSION_ID.toString()); <br/>
+ * HashMap<String, String> messageBody= (HashMap<String, String>)
+ * messageData.getSerializable(MESSAGE_DATA.CONTENT.toString());
  *
  * @author Carlos Verdes
  *
@@ -56,6 +64,7 @@ public class AndroidServiceInvokeHandler extends AbstractBasicInvokeHandler impl
 
 	private static final String ERROR_EVENT_NAME = PlatformEvents.EXECUTION_ERROR.toString()
 			+ ".invoke.android.service";
+	private static final Event ERROR_EVENT = new BasicEvent(ERROR_EVENT_NAME);
 
 	private static final long serialVersionUID = -2816548281755751590L;
 
@@ -64,7 +73,16 @@ public class AndroidServiceInvokeHandler extends AbstractBasicInvokeHandler impl
 
 	private static final String LOG_TAG = FSMServiceImpl.FSM;
 
+	private final android.content.Context androidContext;
+	private final StateMachineEngine engine;
+
 	private final ConcurrentHashMap<String, SCXMLServiceConn> connMap = new ConcurrentHashMap<String, AndroidServiceInvokeHandler.SCXMLServiceConn>();
+
+	public AndroidServiceInvokeHandler(android.content.Context androidContext, StateMachineEngine engine) {
+		super();
+		this.androidContext = androidContext;
+		this.engine = engine;
+	}
 
 	@Override
 	public String getType() {
@@ -93,8 +111,6 @@ public class AndroidServiceInvokeHandler extends AbstractBasicInvokeHandler impl
 
 			Context context = this.getContextByInvokeId(invokeId);
 			if (context != null) {
-				AndroidFSMContext androidContext = AndroidFSMContext.getIntance(context);
-
 				SCXMLServiceConn conn = this.connMap.get(invokeId);
 				if (conn != null) {
 					Messenger messenger = conn.getMessenger();
@@ -110,8 +126,7 @@ public class AndroidServiceInvokeHandler extends AbstractBasicInvokeHandler impl
 						}
 					} catch (RemoteException e) {
 						Log.e(LOG_TAG, "Error sending message to android service.", e);
-						AndroidBroadcastIOProcessor.sendMessageToFSM(androidContext.getAndroidContext(),
-								context.getSessionId(), ERROR_EVENT_NAME, invokeId);
+						engine.pushEvent(invokeId, ERROR_EVENT);
 					}
 				}
 
@@ -174,23 +189,22 @@ public class AndroidServiceInvokeHandler extends AbstractBasicInvokeHandler impl
 	};
 
 	@Override
-	public void invokeServiceInternal(InvokeInfo invokeInfo, Context context) {
+	public void invokeServiceInternal(InvokeInfo invokeInfo, com.nosolojava.fsm.runtime.Context fsmContext) {
 		String invokeId = invokeInfo.getInvokeId();
 		Log.d(LOG_TAG, "service invoke, invokeId: " + invokeId);
 
-		AndroidFSMContext fsmContext = (AndroidFSMContext)context;
-		Intent bindingIntent = AndroidUtils.createIntentFromURI(invokeInfo.getSource(), fsmContext);
+		Intent bindingIntent = AndroidUtils.createIntentForExternalServices(androidContext, invokeInfo.getSource(),
+				fsmContext);
 
 		if (bindingIntent != null) {
 			SCXMLServiceConn conn = new SCXMLServiceConn(invokeId);
 
-			android.content.Context fsmServiceContext = ((AndroidFSMContext) context).getAndroidContext();
-			fsmServiceContext.bindService(bindingIntent, conn, android.content.Context.BIND_AUTO_CREATE);
+			androidContext.bindService(bindingIntent, conn, android.content.Context.BIND_AUTO_CREATE);
 
 			this.connMap.put(invokeId, conn);
 
-			//TODO configure init invoke timeout
-			//wait until the invoke is initiated
+			// TODO configure init invoke timeout
+			// wait until the invoke is initiated
 			CountDownLatch latch = conn.getInitLatch();
 			waitUntilInit(latch, 3000, TimeUnit.MILLISECONDS, invokeId);
 		} else {
@@ -232,7 +246,7 @@ public class AndroidServiceInvokeHandler extends AbstractBasicInvokeHandler impl
 
 			}
 		}
-		//include message name and session id
+		// include message name and session id
 		androidMessage.getData().putString(MESSAGE_DATA.NAME.toString(), message.getName());
 		androidMessage.getData().putString(MESSAGE_DATA.SESSION_ID.toString(), sessionId);
 		androidMessage.getData().putSerializable(MESSAGE_DATA.TARGET_URI.toString(), message.getTarget());
@@ -243,10 +257,9 @@ public class AndroidServiceInvokeHandler extends AbstractBasicInvokeHandler impl
 
 	@Override
 	public void onEndSession(String invokeId, Context context) {
-		AndroidFSMContext aContext = AndroidFSMContext.getIntance(context);
 		SCXMLServiceConn conn = this.connMap.get(invokeId);
 		if (conn != null) {
-			aContext.getAndroidContext().unbindService(conn);
+			this.androidContext.unbindService(conn);
 			this.connMap.remove(invokeId);
 		}
 	}

@@ -12,6 +12,9 @@ import android.view.View;
  */
 public interface XPPFSMViewBindingHandler extends FSMViewBindingHandler {
 
+	public static final String ANDROID_NS = "http://schemas.android.com/apk/res/android";
+
+	
 	/**
 	 * This is used when parsing the xml layout to identify if the element or attribute is relevant for this handler.
 	 * 

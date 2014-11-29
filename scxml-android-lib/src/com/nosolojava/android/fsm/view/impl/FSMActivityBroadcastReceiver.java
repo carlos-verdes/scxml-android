@@ -7,7 +7,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-import com.nosolojava.android.fsm.io.FSM_EXTRAS;
+import com.nosolojava.android.fsm.util.AndroidUtils;
 import com.nosolojava.android.fsm.view.binding.FSMViewBindingHandler;
 
 public class FSMActivityBroadcastReceiver extends BroadcastReceiver {
@@ -24,12 +24,9 @@ public class FSMActivityBroadcastReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context context, Intent intent) {
 
-		boolean passFilter = true;
-		if (intent.hasExtra(FSM_EXTRAS.SESSION_ID.toString())) {
-			passFilter = fsmSession.equals(intent.getStringExtra(FSM_EXTRAS.SESSION_ID.toString()));
-		}
-
-		if (passFilter) {
+		// TODO this should be done with intent filters
+		String sessionId= AndroidUtils.getFSMSessionFromFSMIntent(intent);
+		if (fsmSession.equals(sessionId)) {
 			//pass the intent to the handlers
 			for (FSMViewBindingHandler handler : handlers) {
 				handler.handleFSMIntent(intent);

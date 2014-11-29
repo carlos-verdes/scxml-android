@@ -2,38 +2,29 @@ package com.nosolojava.android.fsm.view.impl;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
-import org.xmlpull.v1.XmlPullParser;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.res.XmlResourceParser;
 import android.net.Uri;
 import android.os.Parcelable;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.splunk.mint.Mint;
 import com.nosolojava.android.fsm.io.AndroidBroadcastIOProcessor;
 import com.nosolojava.android.fsm.io.FSM_ACTIONS;
-import com.nosolojava.android.fsm.io.FSM_EXTRAS;
 import com.nosolojava.android.fsm.service.FSMServiceImpl;
 import com.nosolojava.android.fsm.util.AndroidUtils;
 import com.nosolojava.android.fsm.view.FSMActivityIntegration;
 import com.nosolojava.android.fsm.view.binding.FSMViewBindingHandler;
 import com.nosolojava.android.fsm.view.binding.XPPFSMViewBindingHandler;
-import com.nosolojava.android.fsm.view.binding.impl.ConnectionLostBindingHandler;
-import com.nosolojava.android.fsm.view.binding.impl.OnNewStateBindingHandler;
-import com.nosolojava.android.fsm.view.binding.impl.OnclickBindingHandler;
-import com.nosolojava.android.fsm.view.binding.impl.ValueBindingHandler;
+import com.nosolojava.android.fsm.view.binding.impl.ViewBindingParser;
+import com.splunk.mint.Mint;
 
 /**
  * Abstract class used in the different activity/fragments implementations to delegate FSM activity methods.
@@ -44,15 +35,13 @@ import com.nosolojava.android.fsm.view.binding.impl.ValueBindingHandler;
 public class FSMActivityIntegrationHelper implements FSMActivityIntegration {
 
 	private static final String LOG_TAG = "fsBind";
-	public static final String ANDROID_NS = "http://schemas.android.com/apk/res/android";
-	public static final String ID = "id";
 
 	private final Activity currentActivity;
 	private int currentView = -1;
 	private String fsmSession = null;
 	private Uri fsmUri = null;
 	private final List<FSMViewBindingHandler> viewHandlers = new ArrayList<FSMViewBindingHandler>();
-	private final Map<String, List<XPPFSMViewBindingHandler>> xppViewHandlers = new HashMap<String, List<XPPFSMViewBindingHandler>>();
+	private ViewBindingParser viewBindingParser = new ViewBindingParser();
 
 	private final List<FSMViewBindingHandler> activeHandlers = new ArrayList<FSMViewBindingHandler>();
 
@@ -67,187 +56,10 @@ public class FSMActivityIntegrationHelper implements FSMActivityIntegration {
 	public FSMActivityIntegrationHelper(Activity activity, int viewId, Uri fsmUri) {
 		super();
 
-		this.currentActivity=activity;
-		
+		this.currentActivity = activity;
+
 		initActivityAndView(viewId, fsmUri);
 
-		// on state change handler
-		registerFSMViewBindingHandler(new OnNewStateBindingHandler());
-
-		// value binding handler
-		registerFSMViewBindingHandler(new ValueBindingHandler());
-
-		// onclick handler
-		registerFSMViewBindingHandler(new OnclickBindingHandler());
-
-		//on session expired handler
-		registerFSMViewBindingHandler(new ConnectionLostBindingHandler());
-
-	}
-
-	@Override
-	public void initFSMHandlers() {
-		
-
-		Activity activity = this.getAndroidContext();
-		//init bug sense
-		Mint.initAndStartSession(activity, "f29095fc");
-
-		int viewId = this.getCurrentViewId();
-		Uri fsmUri = this.getFSMUri();
-
-		// init vars and check if there is any change in config
-		initActivityAndView(viewId, fsmUri);
-
-		//init handlers
-		for (FSMViewBindingHandler activeHandler : this.activeHandlers) {
-			activeHandler.reset();
-		}
-
-		//if there is any view based handler --> parse them
-		if (!viewHandlers.isEmpty()) {
-			View rootView = this.currentActivity.findViewById(this.currentView);
-			parseViewBasedHandlers(rootView);
-
-		}
-
-		// if there is any xpp based handlers
-		if (!xppViewHandlers.isEmpty()) {
-			XmlResourceParser xrp = this.currentActivity.getResources().getXml(this.currentView);
-
-			// parse layout
-			parseXppViewBasedHandlers(xrp);
-
-		}
-		//update the active handlers, this will not be updated until next configuration change
-		updateActiveHandlers();
-
-		// create a broadcast receiver for FSM events
-		this.receiver = new FSMActivityBroadcastReceiver(this.activeHandlers, this.fsmSession);
-
-
-		//notify binding handlers
-		for (FSMViewBindingHandler handler : activeHandlers) {
-			handler.onInitActivity(currentActivity);
-		}
-
-		// intent to start the fsm
-		Intent startFSMintent = new Intent(this.getAndroidContext(),FSMServiceImpl.class);
-		startFSMintent.setAction(FSM_ACTIONS.INIT_FSM_SESSION.toString());
-		startFSMintent.setData(fsmUri);
-		activity.startService(startFSMintent);
-
-	}
-
-	protected void updateActiveHandlers() {
-		Set<FSMViewBindingHandler> allHandlers = getAllHandlers();
-		this.activeHandlers.clear();
-		this.activeHandlers.addAll(allHandlers);
-	}
-
-	private void parseXppViewBasedHandlers(XmlPullParser xpp) {
-		try {
-			xpp.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true);
-
-			//until the end of the document
-			while (xpp.getEventType() != XmlPullParser.END_DOCUMENT) {
-
-				if (xpp.getEventType() == XmlPullParser.START_TAG) {
-
-					String namespace = xpp.getNamespace();
-
-					// if namespace is Android
-					if ("".equals(namespace) || ANDROID_NS.equals(namespace)) {
-						//parse android element (att based)
-						parseAndroidElement(xpp);
-
-					} else
-					//if there is any handler
-					if (this.xppViewHandlers.containsKey(namespace)) {
-						//parse the custom element (element based)
-						parseCustomXmlElement(xpp, namespace);
-
-					}
-
-					//go to next xpp event
-					xpp.next();
-
-				} else {
-					//on any other xpp event do next
-					xpp.next();
-				}
-			}
-		} catch (Exception e) {
-			Log.e(LOG_TAG, "Error parsing", e);
-		}
-
-	}
-
-	protected void parseCustomXmlElement(XmlPullParser xpp, String namespace) {
-		for (XPPFSMViewBindingHandler handler : this.xppViewHandlers.get(namespace)) {
-			handler.registerXMLElementBinding(xpp);
-		}
-	}
-
-	protected void parseAndroidElement(XmlPullParser xpp) {
-		View view = null;
-
-		int attCount = xpp.getAttributeCount();
-		String attNs;
-		// for each attribute
-		for (int i = 0; i < attCount; i++) {
-			attNs = xpp.getAttributeNamespace(i);
-			// if some element has a handler
-			if (!ANDROID_NS.equals(attNs) && this.xppViewHandlers.containsKey(attNs)) {
-				registerXppAttBinding(xpp, view, attNs, i);
-			}
-		}
-	}
-
-	protected void registerXppAttBinding(XmlPullParser xpp, View view, String attNs, int i) {
-		String attValue;
-		String attName;
-		if (view == null) {
-			view = this.getViewFromXpp(xpp, ANDROID_NS);
-		}
-
-		if (view != null) {
-			attName = xpp.getAttributeName(i);
-			attValue = xpp.getAttributeValue(i);
-			List<XPPFSMViewBindingHandler> handlers = this.xppViewHandlers.get(attNs);
-			for (XPPFSMViewBindingHandler handler : handlers) {
-				handler.registerXMLAttributeBinding(view, attName, attValue);
-			}
-		}
-	}
-
-	private <T extends View> void parseViewBasedHandlers(View view) {
-
-		// register the binding for all the handlers
-		for (FSMViewBindingHandler handler : this.viewHandlers) {
-			registerBinding(view, handler);
-		}
-
-		// if the view is a group of views
-		if (ViewGroup.class.isAssignableFrom(view.getClass())) {
-			//parse each children
-			ViewGroup aux = (ViewGroup) view;
-			int childrenCount = aux.getChildCount();
-			for (int i = 0; i < childrenCount; i++) {
-				View children = aux.getChildAt(i);
-				parseViewBasedHandlers(children);
-
-			}
-
-		}
-	}
-
-	protected void registerBinding(View view, FSMViewBindingHandler handler) {
-		Class<? extends View> viewClass = handler.getViewClass();
-		//if this handler can manage this view
-		if (viewClass.isAssignableFrom(view.getClass())) {
-			handler.registerViewBinding(view, null);
-		}
 	}
 
 	protected boolean initActivityAndView(int viewId, Uri fsmUri) {
@@ -271,9 +83,9 @@ public class FSMActivityIntegrationHelper implements FSMActivityIntegration {
 			unregisterReceiver();
 
 			fsmIntentFilter = new IntentFilter();
-			fsmIntentFilter.addAction(FSM_ACTIONS.FSM_ACTIVE_STATES.toString());
-			fsmIntentFilter.addAction(FSM_ACTIONS.FSM_ASSIGN.toString());
-			fsmIntentFilter.addAction(FSM_ACTIONS.FSM_SESSION_EXPIRED.toString());
+			fsmIntentFilter.addAction(FSM_ACTIONS.FSM_NEW_SESSION_CONFIG.toString());
+			fsmIntentFilter.addAction(FSM_ACTIONS.FSM_SESSION_INITIATED.toString());
+			fsmIntentFilter.addAction(FSM_ACTIONS.FSM_SESSION_ENDED.toString());
 
 			AndroidUtils.addSessionToFilter(fsmIntentFilter, this.getSessionId());
 
@@ -284,17 +96,103 @@ public class FSMActivityIntegrationHelper implements FSMActivityIntegration {
 	}
 
 	@Override
+	public void initFSMHandlers() {
+
+		Activity activity = this.getAndroidContext();
+		// init bug sense
+		Mint.initAndStartSession(activity, "f29095fc");
+
+		int viewId = this.getCurrentViewId();
+		Uri fsmUri = this.getFSMUri();
+
+		// init vars and check if there is any change in config
+		initActivityAndView(viewId, fsmUri);
+
+		// init handlers
+		for (FSMViewBindingHandler activeHandler : this.activeHandlers) {
+			activeHandler.reset();
+		}
+
+		// if there is any view based handler --> parse them
+		if (!viewHandlers.isEmpty()) {
+			View rootView = this.currentActivity.findViewById(this.currentView);
+			parseViewBasedHandlers(rootView);
+
+		}
+
+		// parse view
+		this.viewBindingParser.parseXppViewBasedHandlers(this.currentActivity, this.currentView);
+
+		// update the active handlers, this will not be updated until next configuration change
+		updateActiveHandlers();
+
+		// create a broadcast receiver for FSM events
+		this.receiver = new FSMActivityBroadcastReceiver(this.activeHandlers, this.fsmSession);
+
+		// notify binding handlers
+		for (FSMViewBindingHandler handler : activeHandlers) {
+			handler.onInitActivity(currentActivity);
+		}
+
+		// intent to start the fsm
+		sendInitFSMIntent();
+
+	}
+
+	protected void sendInitFSMIntent() {
+		Activity activity = this.getAndroidContext();
+		Uri fsmUri = this.getFSMUri();
+		Intent startFSMintent = new Intent(this.getAndroidContext(), FSMServiceImpl.class);
+		startFSMintent.setAction(FSM_ACTIONS.INIT_FSM_SESSION.toString());
+		startFSMintent.setData(fsmUri);
+		activity.startService(startFSMintent);
+	}
+
+	protected void updateActiveHandlers() {
+		Set<FSMViewBindingHandler> allHandlers = getAllHandlers();
+		this.activeHandlers.clear();
+		this.activeHandlers.addAll(allHandlers);
+	}
+
+	private <T extends View> void parseViewBasedHandlers(View view) {
+
+		// register the binding for all the handlers
+		for (FSMViewBindingHandler handler : this.viewHandlers) {
+			registerBinding(view, handler);
+		}
+
+		// if the view is a group of views
+		if (ViewGroup.class.isAssignableFrom(view.getClass())) {
+			// parse each children
+			ViewGroup aux = (ViewGroup) view;
+			int childrenCount = aux.getChildCount();
+			for (int i = 0; i < childrenCount; i++) {
+				View children = aux.getChildAt(i);
+				parseViewBasedHandlers(children);
+
+			}
+
+		}
+	}
+
+	protected void registerBinding(View view, FSMViewBindingHandler handler) {
+		Class<? extends View> viewClass = handler.getViewClass();
+		// if this handler can manage this view
+		if (viewClass.isAssignableFrom(view.getClass())) {
+			handler.registerViewBinding(view, null);
+		}
+	}
+
+	@Override
 	public void bindWithFSM() {
 		if (this.currentActivity == null || this.getCurrentViewId() == -1) {
 			Log.w(LOG_TAG, "To bind with FSM first call FSMActivityIntegration.initFSMHandlers(activity,viewId) method");
 		} else {
-			//register receiver
+			// register receiver
 			registerReceiver();
 
 			// send intent to fsm so it can send actual configuration (active states, assignments, etc).
-			Intent intent = new Intent(FSM_ACTIONS.INIT_ACTIVITY.toString());
-			intent.putExtra(FSM_EXTRAS.SESSION_ID.toString(), this.fsmSession);
-			this.currentActivity.startService(intent);
+			sendInitFSMIntent();
 
 			for (FSMViewBindingHandler activeHandler : this.activeHandlers) {
 				activeHandler.onBind(this.currentActivity, this.fsmSession);
@@ -349,12 +247,12 @@ public class FSMActivityIntegrationHelper implements FSMActivityIntegration {
 
 	@Override
 	public void pushEventToFSM(String eventName, Parcelable data) {
-		AndroidBroadcastIOProcessor.sendMessageToFSM(this.currentActivity, this.fsmSession, eventName, data);
+		AndroidBroadcastIOProcessor.sendMessageToFSM(this.fsmSession, this.currentActivity, eventName, data);
 	}
 
 	@Override
 	public void pushEventToFSM(String eventName, Serializable data) {
-		AndroidBroadcastIOProcessor.sendMessageToFSM(this.currentActivity, this.fsmSession, eventName, data);
+		AndroidBroadcastIOProcessor.sendMessageToFSM(this.fsmSession, this.currentActivity, eventName, data);
 	}
 
 	@Override
@@ -368,22 +266,11 @@ public class FSMActivityIntegrationHelper implements FSMActivityIntegration {
 	}
 
 	public boolean registerFSMViewBindingHandler(XPPFSMViewBindingHandler handler) {
-		List<XPPFSMViewBindingHandler> handlers;
-		String namespace = handler.getNamespace();
-		if (this.xppViewHandlers.containsKey(namespace)) {
-			handlers = this.xppViewHandlers.get(namespace);
-		} else {
-			handlers = new ArrayList<XPPFSMViewBindingHandler>();
-		}
-
-		handlers.add(handler);
-		this.xppViewHandlers.put(namespace, handlers);
-
-		return true;
+		return this.viewBindingParser.registerFSMViewBindingHandler(handler);
 	}
 
 	public Object unregisterFSMViewBindingHandler(XPPFSMViewBindingHandler handler) {
-		return this.xppViewHandlers.remove(handler.getNamespace());
+		return this.viewBindingParser.unregisterFSMViewBindingHandler(handler);
 	}
 
 	public Set<FSMViewBindingHandler> getAllHandlers() {
@@ -391,36 +278,12 @@ public class FSMActivityIntegrationHelper implements FSMActivityIntegration {
 		Set<FSMViewBindingHandler> handlers = new HashSet<FSMViewBindingHandler>();
 		handlers.addAll(this.viewHandlers);
 
-		for (List<XPPFSMViewBindingHandler> xppHandlers : this.xppViewHandlers.values()) {
+		for (List<XPPFSMViewBindingHandler> xppHandlers : this.viewBindingParser.getHandlerList()) {
 			handlers.addAll(xppHandlers);
 		}
 
 		return handlers;
 
-	}
-
-	private View getViewFromXpp(XmlPullParser xpp, String androidNs) {
-
-		int id = getViewId(xpp, androidNs);
-
-		View view = id != -1 ? this.currentActivity.findViewById(id) : null;
-
-		return view;
-
-	}
-
-	private int getViewId(XmlPullParser xpp, String androidNs) {
-		int id = -1;
-
-		String idString = xpp.getAttributeValue(androidNs, ID);
-		if (idString == null) {
-			Log.w(LOG_TAG,
-					"Error getting android id, review your layout elements (all must have an id to do a binding).");
-		} else {
-			idString = idString.replaceAll("\\D", "");
-			id = Integer.parseInt(idString);
-		}
-		return id;
 	}
 
 	@Override

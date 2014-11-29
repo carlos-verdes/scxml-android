@@ -5,25 +5,32 @@
 		<data id="welcome" expr="'Hello world'" />
 		<data id="state" expr="'init'" />
 		<data id="principal" expr="null"/>
+		<data id="username" expr="''"/>
 	</datamodel>
 	<state id="main-state">
 		<initial>
-			<transition target="disconnected-state" />
+			<transition target="disconnected-state"  />
 		</initial>
-		<state id="connected-state">
-			<onentry>
-				<assign location="state" expr="'connected'" />
-			</onentry>
-			<transition event="disconnect" target="disconnected-state" />
-		</state>
+		<!-- update data from view -->
+		<transition event="view.valueBinding.newVal" type="internal">
+		    <assign location="_event.data.name" expr="_event.data.value"></assign>
+		</transition>
 		<state id="disconnected-state">
 			<onentry>
 				<assign location="state" expr="'disconnected'" />
 			</onentry>
 			<transition event="connect" target="connected-state">
+			    <!-- 
 				<assign location="principal" expr="_event.data" />
-				<assign location="welcome" expr="'Hi: '+_event.data.name" />
+				 -->
+				<assign location="welcome" expr="'Hi: '+username" />
 			</transition>
+		</state>
+		<state id="connected-state">
+			<onentry>
+				<assign location="state" expr="'connected'" />
+			</onentry>
+			<transition event="disconnect" target="disconnected-state" />
 		</state>
 		<transition event="exit" target="off-state" />
 	</state>

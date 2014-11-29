@@ -14,14 +14,12 @@ import android.content.ContentResolver;
 import android.net.Uri;
 import android.util.Log;
 
-import com.nosolojava.android.fsm.executable.AndroidAssign;
 import com.nosolojava.android.fsm.service.FSMServiceImpl;
 import com.nosolojava.fsm.model.StateMachineModel;
 import com.nosolojava.fsm.model.config.exception.ConfigurationException;
 import com.nosolojava.fsm.parser.XppActionParser;
 import com.nosolojava.fsm.parser.XppStateMachineParser;
 import com.nosolojava.fsm.parser.exception.SCXMLParserException;
-import com.nosolojava.fsm.runtime.executable.Executable;
 
 public class AndroidXppStateMachineParser extends XppStateMachineParser {
 
@@ -81,26 +79,4 @@ public class AndroidXppStateMachineParser extends XppStateMachineParser {
 		xpp.setInput(is, "UTF-8");
 		return xpp;
 	}
-
-	/*	protected int getXMLId(String name) throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
-			int xmlId;
-			Class<?> clazz = MetadataUtil.classFromName(R$XML, this.androidContext);
-			Field field = clazz.getField(name);
-
-			xmlId = field.getInt(null);
-			return xmlId;
-		}
-	*/
-	@Override
-	protected Executable createAssignByValue(String location, String value) {
-//		Log.d("SCXML", "parsing android assign");
-		return AndroidAssign.assignByValue(location, value);
-	}
-
-	@Override
-	protected Executable createAssignByExpression(String location, String expr) {
-//		Log.d("SCXML", "parsing android assign");
-		return AndroidAssign.assignByExpression(location, expr);
-	}
-
 }

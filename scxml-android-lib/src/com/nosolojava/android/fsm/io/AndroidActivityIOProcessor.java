@@ -1,31 +1,39 @@
 package com.nosolojava.android.fsm.io;
 
-import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 
-import com.nosolojava.fsm.runtime.StateMachineEngine;
-import com.nosolojava.fsm.runtime.executable.externalcomm.Message;
-
+/**
+ * <p>
+ * Start new activity ({@code androidContext.startActivity(intent)}. <br/>
+ * {@code <send type="activitiy" event="your.activity.Class" target="http://someuri">}
+ * <ul>
+ * <li><b>event</b> is the activity <b>class</b>
+ * <li><b>source session uri</b> is the intent <b>data</b> (so receivers could filter) in the form fsm://sessionId
+ * <li><b>content</b> will be passed as an extra "com.nosolojava.fsm.EXTRA_CONTENT" (you can use
+ * {@link FSM_EXTRAS#CONTENT}).
+ * <li><b>target</b> will be pased as an extra "com.nosolojava.fsm.EXTRA_TARGET_URI" (you can use
+ * {@link FSM_EXTRAS#TARGET_URI}).
+ * 
+ * @author cverdes
+ *
+ */
 public class AndroidActivityIOProcessor extends AndroidBroadcastIOProcessor {
 
 	public static final String NAME = "activity";
 
-	public AndroidActivityIOProcessor(Service androidService) {
-		super(androidService);
-	}
-
-	public AndroidActivityIOProcessor(Service androidService, StateMachineEngine engine) {
-		super(androidService, engine);
+	public AndroidActivityIOProcessor(Context androidContext) {
+		super(androidContext);
 	}
 
 	@Override
-	public void sendMessage(Message message) {
- 
-		if (message != null) {
-			Intent intent = createIntentFromMessage(message);
-			intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-			this.androidService.startActivity(intent);
-		}
+	protected void sendIntent(Intent intent) {
+		this.androidContext.startActivity(intent);
+	}
+
+	@Override
+	protected void loadEvent(String event, Intent intent) {
+		intent.setClassName(this.androidContext, event);
 	}
 
 	@Override

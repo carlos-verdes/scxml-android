@@ -78,7 +78,8 @@ public class PreferenceBean<T extends Serializable> implements Serializable {
 	public void sendUpdateToFSM(Context androidContext, String sessionId, SharedPreferences preferences) {
 
 		Serializable keyVal = getPrefKeyValue(preferences);
-		AndroidBroadcastIOProcessor.sendMessageToFSM(androidContext, sessionId, PreferenceKeyValue.PREFERENCE_EVENT, keyVal);
+		AndroidBroadcastIOProcessor.sendMessageToFSM(sessionId, androidContext, PreferenceKeyValue.PREFERENCE_EVENT,
+				keyVal);
 	}
 
 	private boolean isAssignable(Class<?> fieldClass, Class<?>... classes) {

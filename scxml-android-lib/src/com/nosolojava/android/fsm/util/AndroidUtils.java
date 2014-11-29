@@ -19,6 +19,7 @@ import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Parcelable;
 import android.util.Log;
@@ -26,7 +27,6 @@ import android.widget.ImageView;
 
 import com.nosolojava.android.fsm.io.AndroidBroadcastIOProcessor;
 import com.nosolojava.android.fsm.io.FSM_EXTRAS;
-import com.nosolojava.android.fsm.service.AndroidFSMContext;
 import com.nosolojava.android.fsm.service.FSMServiceImpl;
 import com.nosolojava.fsm.android.R;
 import com.nosolojava.fsm.runtime.executable.externalcomm.InvokeInfo;
@@ -195,21 +195,11 @@ public class AndroidUtils {
 	 * {@code new Intent(androidContext, com.service.YourService.class)}
 	 * </ul>
 	 * <p>
-	 * In the intent two extras will be included, one with the sessionId and another with the return URI (so the called
-	 * service could answer the fsm). <br/>
-	 * This extras are registered in the {@link FSM_EXTRAS} class.
+	 * The intent data has the return Uri so the called service could answer the fsm using the {@link AndroidBroadcastIOProcessor#sendMessageToFSM(Context, android.net.Uri, String, Object)}. <br/>
 	 * 
-	 * @param uri
-	 * @param fsmContext
 	 * @return
 	 */
-	public static Intent createIntentFromURI(URI uri, AndroidFSMContext fsmContext) {
-		String sessionId = fsmContext.getSessionId();
-		Context androidContext = fsmContext.getAndroidContext();
-		return createIntentFromURI(uri, androidContext, sessionId);
-	}
-
-	public static Intent createIntentFromURI(URI uri, Context context, String sessionId) {
+	public static Intent createIntentForExternalServices(Context androidContext, URI uri, com.nosolojava.fsm.runtime.Context fsmContext) {
 		Intent bindingIntent = null;
 
 		String scheme = uri.getScheme();
@@ -217,13 +207,13 @@ public class AndroidUtils {
 		if (ACTION_SCHEME.equals(scheme)) {
 			bindingIntent = createImplicitIntentFromURI(uri);
 		} else if (CLASS_SCHEME.equals(scheme)) {
-			bindingIntent = createExplicitIntentFromURI(context, uri);
+			bindingIntent = createExplicitIntentFromURI(androidContext, uri);
 		}
 
 		if (bindingIntent != null) {
-			bindingIntent.putExtra(FSM_EXTRAS.SESSION_ID.toString(), sessionId);
-			bindingIntent.putExtra(FSM_EXTRAS.SOURCE_URI.toString(),
-					AndroidBroadcastIOProcessor.getLocationStatic(sessionId));
+			//set the return uri
+			String sessionId= fsmContext.getSessionId();
+			bindingIntent.setData(AndroidBroadcastIOProcessor.getAndroidLocationStatic(sessionId));
 
 		} else {
 			Log.w(LOG_TAG, "Error creating intent from uri, message src: " + uri);
@@ -231,7 +221,7 @@ public class AndroidUtils {
 		return bindingIntent;
 	}
 
-	public static Intent createExplicitIntentFromURI(Context context, URI messageSource) {
+	public static Intent createExplicitIntentFromURI(Context androidContext, URI messageSource) {
 		Intent bindingIntent = null;
 		//class:com.nosolojava.service.YourService
 		String serviceClassName = messageSource.getSchemeSpecificPart();
@@ -245,8 +235,7 @@ public class AndroidUtils {
 		}
 
 		if (clazz != null) {
-			android.content.Context fsmService = context;
-			bindingIntent = new Intent(fsmService, clazz);
+			bindingIntent = new Intent(androidContext, clazz);
 		}
 		return bindingIntent;
 	}
@@ -260,6 +249,23 @@ public class AndroidUtils {
 		return bindingIntent;
 	}
 
+
+	public static String getFSMSessionFromFSMIntent(Intent intent) {
+		Uri fsmURI=intent.getData();
+		return getFSMSessionFromUri(fsmURI);
+		
+	}
+
+	public static String getFSMSessionFromUri(Uri fsmURI) {
+		String result = null;
+
+		if (fsmURI != null) {
+			result = fsmURI.getAuthority();
+		}
+		return result;
+		
+	}
+
 	public static String getFSMSessionFromUri(URI fsmURI) {
 		String result = null;
 
@@ -269,4 +275,5 @@ public class AndroidUtils {
 		return result;
 	}
 
+	
 }
