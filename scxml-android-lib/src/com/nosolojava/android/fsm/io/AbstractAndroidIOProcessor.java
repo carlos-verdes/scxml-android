@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.net.Uri;
 
 import com.nosolojava.android.fsm.util.AndroidUtils;
+import com.nosolojava.fsm.runtime.Event;
+import com.nosolojava.fsm.runtime.StateMachineEngine;
 import com.nosolojava.fsm.runtime.executable.externalcomm.IOProcessor;
 import com.nosolojava.fsm.runtime.executable.externalcomm.Message;
 
@@ -26,6 +28,7 @@ public abstract class AbstractAndroidIOProcessor implements IOProcessor {
 
 	// fsm session event template fsm://{sessionId}/{event}
 	protected static final String MESSAGE_TO_FSM_TEMPLATE = FSM_SCHEME + "://%s/%s";
+	private StateMachineEngine engine;
 
 	// abstract methods
 	protected abstract void sendIntent(Intent intent);
@@ -46,7 +49,7 @@ public abstract class AbstractAndroidIOProcessor implements IOProcessor {
 	}
 
 	@Override
-	public void sendMessage(Message message) {
+	public void sendMessageFromFSM(Message message) {
 
 		if (message != null) {
 			Intent intent = createIntentFromMessage(message);
@@ -91,4 +94,19 @@ public abstract class AbstractAndroidIOProcessor implements IOProcessor {
 	protected void loadTarget(URI target, Intent intent) {
 		intent.putExtra(FSM_EXTRAS.TARGET_URI.toString(), Uri.parse(target.toString()));
 	}
+
+	@Override
+	public void sendEventToFSM(String sessionId, Event event) {
+		if (this.engine.isSessionActive(sessionId)) {
+			this.engine.pushEvent(sessionId, event);
+		}
+
+	}
+
+	@Override
+	public void setEngine(StateMachineEngine engine) {
+		this.engine = engine;
+
+	}
+
 }

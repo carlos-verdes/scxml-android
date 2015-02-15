@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.xmlpull.v1.XmlPullParser;
 
 import android.app.Activity;
+import android.app.Service;
 import android.content.Intent;
 import android.os.Parcelable;
 import android.text.Editable;
@@ -48,15 +49,15 @@ import com.nosolojava.fsm.runtime.ContextInstance;
  */
 public class ValueBindingHandler extends AbstractFSMViewBindingHandler {
 
-	private Map<String, Set<TextView>> textValueBindingMap = new ConcurrentHashMap<String, Set<TextView>>();
-	private Map<String, Set<SmartImageView>> smartImageValueBindingMap = new ConcurrentHashMap<String, Set<SmartImageView>>();
-	private Map<String, Set<ImageView>> normalImageValueBindingMap = new ConcurrentHashMap<String, Set<ImageView>>();
-	private Map<EditText, TextWatcher> textWatchers = new ConcurrentHashMap<EditText, TextWatcher>();
-
 	public static String VALUE_ATTRIBUTE = "value";
 	public static final String INIT_EVENT = "view.valueBinding.init";
 	protected static final String NEW_VAL_EVENT = "view.valueBinding.newVal";
 	private static final String LOG_TAG = "ValueBind";
+
+	private Map<String, Set<TextView>> textValueBindingMap = new ConcurrentHashMap<String, Set<TextView>>();
+	private Map<String, Set<SmartImageView>> smartImageValueBindingMap = new ConcurrentHashMap<String, Set<SmartImageView>>();
+	private Map<String, Set<ImageView>> normalImageValueBindingMap = new ConcurrentHashMap<String, Set<ImageView>>();
+	private Map<EditText, TextWatcher> textWatchers = new ConcurrentHashMap<EditText, TextWatcher>();
 
 	private ContextInstance lastContextInstance = null;
 
@@ -64,11 +65,7 @@ public class ValueBindingHandler extends AbstractFSMViewBindingHandler {
 
 	public ValueBindingHandler() {
 		super();
-	}
 
-	@Override
-	public Class<? extends View> getViewClass() {
-		return TextView.class;
 	}
 
 	@Override
@@ -136,8 +133,8 @@ public class ValueBindingHandler extends AbstractFSMViewBindingHandler {
 							Log.d("TEST", "Sending new val: " + location + "= |" + value + "|");
 							Parcelable data = new AssignParcelableString(location, value);
 							ValueBindingHandler.this.userHasEdited.set(true);
-							AndroidBroadcastIOProcessor.sendMessageToFSM(fsmSessionId, currentActivity, NEW_VAL_EVENT,
-									data);
+							AndroidBroadcastIOProcessor.sendMessageToFSM(fsmSessionId, currentActivity,
+									fsmServiceClazz, NEW_VAL_EVENT, data);
 
 						} else {
 							Log.d("TEST", "onTextChanged " + editView.getId() + " : |" + s.toString()
@@ -174,15 +171,8 @@ public class ValueBindingHandler extends AbstractFSMViewBindingHandler {
 	}
 
 	@Override
-	public void onInitActivity(Activity activity) {
-
-		this.currentActivity = activity;
-
-	}
-
-	@Override
-	public void onBind(Activity activity, String fsmSessionId) {
-		super.onBind(activity, fsmSessionId);
+	public void onBind(Activity activity, Class<? extends Service> fsmServiceClazz, String fsmSessionId) {
+		super.onBind(activity, fsmServiceClazz, fsmSessionId);
 
 		for (Entry<EditText, TextWatcher> entry : this.textWatchers.entrySet()) {
 			entry.getKey().addTextChangedListener(entry.getValue());
@@ -196,14 +186,14 @@ public class ValueBindingHandler extends AbstractFSMViewBindingHandler {
 	}
 
 	@Override
-	public void onUnbind(Activity activity, String fsmSessionId) {
+	public void onUnbind(Activity activity, Class<? extends Service> fsmServiceClazz, String fsmSessionId) {
 
 		for (Entry<EditText, TextWatcher> entry : this.textWatchers.entrySet()) {
 			entry.getKey().removeTextChangedListener(entry.getValue());
 
 		}
 
-		super.onUnbind(activity, fsmSessionId);
+		super.onUnbind(activity, fsmServiceClazz, fsmSessionId);
 
 	}
 

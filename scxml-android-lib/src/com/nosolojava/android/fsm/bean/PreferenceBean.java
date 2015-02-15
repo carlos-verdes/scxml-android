@@ -2,6 +2,7 @@ package com.nosolojava.android.fsm.bean;
 
 import java.io.Serializable;
 
+import android.app.Service;
 import android.content.Context;
 import android.content.SharedPreferences;
 
@@ -19,13 +20,15 @@ public class PreferenceBean<T extends Serializable> implements Serializable {
 	public static final Class<?>[] BYTE_ARRAY_CLASSES = new Class<?>[] { byte[].class };
 
 	private Class<? extends T> clazz;
+	private final Class<? extends Service> fsmServiceClazz;
+
 	private final String key;
 
-	public PreferenceBean(Class<? extends T> clazz, String key) {
+	public PreferenceBean(Class<? extends T> clazz, Class<? extends Service> fsmServiceClazz, String key) {
 		super();
 		this.clazz = clazz;
+		this.fsmServiceClazz = fsmServiceClazz;
 		this.key = key;
-
 	}
 
 	public PreferenceKeyValue<T> getPrefKeyValue(SharedPreferences preferences) {
@@ -78,8 +81,8 @@ public class PreferenceBean<T extends Serializable> implements Serializable {
 	public void sendUpdateToFSM(Context androidContext, String sessionId, SharedPreferences preferences) {
 
 		Serializable keyVal = getPrefKeyValue(preferences);
-		AndroidBroadcastIOProcessor.sendMessageToFSM(sessionId, androidContext, PreferenceKeyValue.PREFERENCE_EVENT,
-				keyVal);
+		AndroidBroadcastIOProcessor.sendMessageToFSM(sessionId, androidContext, fsmServiceClazz,
+				PreferenceKeyValue.PREFERENCE_EVENT, keyVal);
 	}
 
 	private boolean isAssignable(Class<?> fieldClass, Class<?>... classes) {

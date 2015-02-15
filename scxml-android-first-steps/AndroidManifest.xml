@@ -17,30 +17,13 @@
         <activity android:name=".FSMSimpleActivity" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-            <!-- fsm session has started -->
-            <intent-filter>
-                <action android:name="com.nosolojava.fsm.ACTION_FSM_SESSION_INITIATED" />
-
-                <data android:pathPattern="fsm://first-steps-main-session" />
-            </intent-filter>
-            <!-- fsm session has finished -->
-            <intent-filter>
-                <action android:name="com.nosolojava.fsm.ACTION_FSM_SESSION_ENDED" />
-
-                <data android:pathPattern="fsm://first-steps-main-session" />
-            </intent-filter>
-            <!-- fsm config has changed -->
-            <intent-filter>
-                <action android:name="com.nosolojava.fsm.ACTION_FSM_NEW_SESSION_CONFIG" />
-
-                <data android:pathPattern="fsm://first-steps-main-session" />
             </intent-filter>
         </activity>
         <!-- FSM service -->
-        <service android:name="com.nosolojava.android.fsm.service.FSMServiceImpl" >
+        <service
+            android:name=".service.FirstStepsFSMService"
+            android:process="com.nosolojava.fsm.android.firstSteps.FSM" >
 
             <!-- Init FSM session -->
             <intent-filter>

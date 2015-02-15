@@ -1,9 +1,7 @@
 package com.nosolojava.android.fsm.view.binding.impl;
 
-import java.io.Serializable;
-
 import android.app.Activity;
-import android.view.View;
+import android.app.Service;
 
 import com.nosolojava.android.fsm.view.binding.XPPFSMViewBindingHandler;
 
@@ -14,10 +12,7 @@ public abstract class AbstractFSMViewBindingHandler implements XPPFSMViewBinding
 	protected String fsmSessionId = null;
 	protected Activity currentActivity = null;
 
-	@Override
-	public Class<? extends View> getViewClass() {
-		return View.class;
-	}
+	protected Class<? extends Service> fsmServiceClazz;
 
 	@Override
 	public String getNamespace() {
@@ -25,23 +20,18 @@ public abstract class AbstractFSMViewBindingHandler implements XPPFSMViewBinding
 	}
 
 	@Override
-	public void onBind(Activity activity, String fsmSessionId) {
+	public void onBind(Activity activity, Class<? extends Service> fsmServiceClazz, String fsmSessionId) {
 		this.fsmSessionId = fsmSessionId;
 		this.currentActivity = activity;
+		this.fsmServiceClazz= fsmServiceClazz;
 	}
 
 	@Override
-	public void onUnbind(Activity activity, String fsmSessionId) {
+	public void onUnbind(Activity activity, Class<? extends Service> fsmServiceClazz, String fsmSessionId) {
 		this.fsmSessionId = null;
 		this.currentActivity = null;
+		this.fsmServiceClazz= null;
 
 	}
-
-	@Override
-	public <T extends View> void registerViewBinding(T view, Serializable dataBinding) {
-		throw new UnsupportedOperationException(
-				"For xml based handlers use registerXMLAttributeBinding method instead.");
-	}
-
 	
 }

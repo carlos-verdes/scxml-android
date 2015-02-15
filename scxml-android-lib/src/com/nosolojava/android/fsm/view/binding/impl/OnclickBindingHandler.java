@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import org.xmlpull.v1.XmlPullParser;
 
 import android.app.Activity;
+import android.app.Service;
 import android.content.Intent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -50,7 +51,7 @@ public class OnclickBindingHandler extends AbstractFSMViewBindingHandler {
 		@Override
 		public void onClick(View v) {
 			if (currentActivity != null) {
-				AndroidBroadcastIOProcessor.sendMessageToFSM(fsmSessionId, currentActivity, eventName);
+				AndroidBroadcastIOProcessor.sendMessageToFSM(fsmSessionId, currentActivity, fsmServiceClazz, eventName);
 			}
 		}
 	}
@@ -63,8 +64,8 @@ public class OnclickBindingHandler extends AbstractFSMViewBindingHandler {
 	}
 
 	@Override
-	public void onBind(final Activity activity, String fsmSessionId) {
-		super.onBind(activity, fsmSessionId);
+	public void onBind(final Activity activity, Class<? extends Service> fsmServiceClazz, String fsmSessionId) {
+		super.onBind(activity, fsmServiceClazz, fsmSessionId);
 
 		for (Entry<View, OnClickListener> entry : this.onclickBindingMap.entrySet()) {
 			entry.getKey().setOnClickListener(entry.getValue());
@@ -72,12 +73,12 @@ public class OnclickBindingHandler extends AbstractFSMViewBindingHandler {
 	}
 
 	@Override
-	public void onUnbind(Activity activity, String fsmSessionId) {
+	public void onUnbind(Activity activity, Class<? extends Service> fsmServiceClazz, String fsmSessionId) {
 
 		for (Entry<View, OnClickListener> entry : this.onclickBindingMap.entrySet()) {
 			entry.getKey().setOnClickListener(null);
 		}
-		super.onUnbind(activity, fsmSessionId);
+		super.onUnbind(activity, fsmServiceClazz, fsmSessionId);
 
 	}
 
@@ -86,17 +87,12 @@ public class OnclickBindingHandler extends AbstractFSMViewBindingHandler {
 	}
 
 	@Override
-	public void onInitActivity(Activity activity) {
-	}
-
-	@Override
 	public boolean handleFSMIntent(Intent intent) {
 		return false;
 	}
-	
+
 	@Override
 	public void updateView(ContextInstance newContextInstance) {
-		
 	}
 
 }

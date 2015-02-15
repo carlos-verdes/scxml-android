@@ -13,8 +13,7 @@
         android:id="@+id/mainHeaderText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="From fsm:"
-        />
+        android:text="From fsm:" />
 
     <TextView
         android:id="@+id/welcomeText"
@@ -22,15 +21,16 @@
         android:layout_height="wrap_content"
         android:layout_toRightOf="@id/mainHeaderText"
         fsm:value="welcome" />
-    
-        <Button
-        android:id="@+id/sign_in_button"
+
+    <Button
+        android:id="@+id/exit_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/mainHeaderText"
+        android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:text="disconnect"
-        fsm:onclick="disconnect" />
-    
+        android:layout_marginBottom="8dp"
+        android:text="exit"
+        fsm:onclick="exit" />
+
 
 </RelativeLayout>

@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import android.app.Activity;
+import android.app.Service;
 import android.content.Intent;
 
 import com.nosolojava.android.fsm.view.binding.XPPFSMViewBindingHandler;
@@ -24,30 +25,39 @@ import com.nosolojava.fsm.runtime.ContextInstance;
 public class ViewStateLoaderHandler extends NewFSMConfigurationHandler {
 
 	private final Activity androidActivity;
+	private final Class<? extends Service> fsmServiceClazz;
+
 	private ConcurrentHashMap<String, Integer> stateViewMap = new ConcurrentHashMap<String, Integer>();
+	private ConcurrentHashMap<Integer, Runnable> viewCallableMap = new ConcurrentHashMap<Integer, Runnable>();
 	private AtomicInteger lastViewId = new AtomicInteger(-1);
 
-	private ViewBindingParser viewParser = new ViewBindingParser();
+	private ViewBindingParser viewParser;
 
-	public ViewStateLoaderHandler(Activity androidActivity) {
+	public ViewStateLoaderHandler(Activity androidActivity, Class<? extends Service> fsmServiceClazz) {
 		super();
 		this.androidActivity = androidActivity;
+		this.fsmServiceClazz = fsmServiceClazz;
+		this.viewParser = new ViewBindingParser(this.fsmServiceClazz);
 
 	}
 
 	private void initBindingHandlers(Integer viewId, ContextInstance contextInstance) {
 		// parse the view
-		viewParser.parseXppViewBasedHandlers(androidActivity, viewId);
+		viewParser.parseXppViewBasedHandlers(this.androidActivity, viewId);
 
 		// init all handlers
 		for (XPPFSMViewBindingHandler handler : viewParser.getNosolojavaHandlers()) {
-			handler.onBind(androidActivity, contextInstance.getSessionId());
+			handler.onBind(this.androidActivity, this.fsmServiceClazz, contextInstance.getSessionId());
 		}
 	}
 
-	public void registerStateView(Integer view, String... states) {
+	public void registerStateView(Integer view, Runnable callback, String... states) {
 		for (String state : states) {
 			stateViewMap.put(state, view);
+		}
+
+		if (callback != null) {
+			viewCallableMap.put(view, callback);
 		}
 
 	}
@@ -67,6 +77,12 @@ public class ViewStateLoaderHandler extends NewFSMConfigurationHandler {
 					// avoid multiple calls with same config
 					if (lastViewId.getAndSet(viewId) != viewId) {
 						androidActivity.setContentView(viewId);
+
+						// call on change callback
+						if (this.viewCallableMap.containsKey(viewId)) {
+							Runnable callback = this.viewCallableMap.get(viewId);
+							callback.run();
+						}
 
 						// init handlers
 						initBindingHandlers(viewId, contextInstance);

@@ -10,7 +10,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.xmlpull.v1.XmlPullParser;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.util.Log;
 import android.view.View;
@@ -128,11 +127,6 @@ public class OnNewStateBindingHandler extends AbstractFSMViewBindingHandler {
 
 	@Override
 	public void registerXMLElementBinding(XmlPullParser xpp) {
-	}
-
-	@Override
-	public void onInitActivity(Activity activity) {
-
 	}
 
 	@Override

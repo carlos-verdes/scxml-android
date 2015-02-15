@@ -2,13 +2,12 @@ package com.nosolojava.android.fsm.io;
 
 import java.net.URI;
 
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 
-import com.nosolojava.android.fsm.service.FSMServiceImpl;
 import com.nosolojava.android.fsm.util.AndroidUtils;
-import com.nosolojava.fsm.runtime.StateMachineEngine;
 
 /**
  * <p>
@@ -31,9 +30,14 @@ public class AndroidBroadcastIOProcessor extends AbstractAndroidIOProcessor {
 	public static final String NAME = "broadcast";
 
 	protected final Context androidContext;
+	
+	protected final Service fsmService;
 
-	public AndroidBroadcastIOProcessor(Context androidContext) {
+
+	public AndroidBroadcastIOProcessor(Context androidContext, Service fsmService) {
+		super();
 		this.androidContext = androidContext;
+		this.fsmService = fsmService;
 	}
 
 	@Override
@@ -41,11 +45,11 @@ public class AndroidBroadcastIOProcessor extends AbstractAndroidIOProcessor {
 		return NAME;
 	}
 
-	public static void sendBroadcastFromFSM(String sessionId, Context androidContext, FSM_ACTIONS action) {
-		sendBroadcastFromFSM(sessionId, androidContext, action, null);
+	public void sendBroadcastFromFSM(String sessionId, FSM_ACTIONS action) {
+		sendBroadcastFromFSM(sessionId, action, null);
 	}
 
-	public static void sendBroadcastFromFSM(String sessionId, Context androidContext, FSM_ACTIONS action, Object data) {
+	public void sendBroadcastFromFSM(String sessionId, FSM_ACTIONS action, Object data) {
 		Intent intent = new Intent(action.toString());
 		URI sessionUri = getLocationStatic(sessionId);
 		intent.setData(Uri.parse(sessionUri.toString()));
@@ -57,22 +61,22 @@ public class AndroidBroadcastIOProcessor extends AbstractAndroidIOProcessor {
 		androidContext.sendBroadcast(intent);
 	}
 
-	public static void sendMessageToFSM(String sessionId, Context androidContext, String event) {
-		sendMessageToFSM(sessionId, androidContext, event, null);
+	public static void sendMessageToFSM(String sessionId, Context androidContext, Class<? extends Service> serviceClazz, String event) {
+		sendMessageToFSM(sessionId, androidContext, serviceClazz, event, null);
 	}
 
-	public static void sendMessageToFSM(String sessionId, Context androidContext, String event, Object data) {
+	public static void sendMessageToFSM(String sessionId, Context androidContext, Class<? extends Service> serviceClazz, String event, Object data) {
 		 Uri fsmUri = getAndroidLocationStatic(sessionId);
-		sendMessageToFSM(androidContext, fsmUri, event, data);
+		sendMessageToFSM(androidContext, serviceClazz, fsmUri, event, data);
 	}
 
-	public static void sendMessageToFSM(Context androidContext, Uri fsmUri, String event) {
-		sendMessageToFSM(androidContext, fsmUri, event, null);
+	public static void sendMessageToFSM(Context androidContext, Class<? extends Service> serviceClazz, Uri fsmUri, String event) {
+		sendMessageToFSM(androidContext, serviceClazz, fsmUri, event, null);
 
 	}
 
-	public static void sendMessageToFSM(Context androidContext, Uri fsmUri, String event, Object data) {
-		Intent intent = new Intent(androidContext, FSMServiceImpl.class);
+	public static void sendMessageToFSM(Context androidContext, Class<? extends Service> serviceClazz, Uri fsmUri, String event, Object data) {
+		Intent intent = new Intent(androidContext, serviceClazz);
 		intent.setAction(FSM_ACTIONS.SEND_EVENT_TO_FSM.toString());
 		
 		// add event to uri
@@ -89,11 +93,6 @@ public class AndroidBroadcastIOProcessor extends AbstractAndroidIOProcessor {
 	@Override
 	protected void sendIntent(Intent intent) {
 		this.androidContext.sendBroadcast(intent);
-	}
-
-	@Override
-	public void setEngine(StateMachineEngine engine) {
-
 	}
 
 }

@@ -48,6 +48,7 @@ public class FSMServiceImpl extends Service {
 
 	private StateMachineEngine engine = null;
 	private AndroidFSMListener defaultListener;
+	private AndroidBroadcastIOProcessor androidBroadcastIO;
 
 	public FSMServiceImpl() {
 		super();
@@ -59,6 +60,17 @@ public class FSMServiceImpl extends Service {
 
 		super.onCreate();
 
+		initEngine();
+
+	}
+
+	@Override
+	public void onDestroy() {
+		stopEngine();
+		super.onDestroy();
+	}
+
+	protected void initEngine() {
 		try {
 
 			Log.i(FSM, "Creating FSM service");
@@ -71,8 +83,9 @@ public class FSMServiceImpl extends Service {
 			AndroidServiceInvokeHandler androidServiceInvokeHandler = new AndroidServiceInvokeHandler(this, this.engine);
 
 			List<IOProcessor> ioProcessors = this.getIOProcessors();
-			ioProcessors.add(new AndroidBroadcastIOProcessor(this));
-			ioProcessors.add(new AndroidActivityIOProcessor(this));
+			this.androidBroadcastIO = new AndroidBroadcastIOProcessor(this, this);
+			ioProcessors.add(this.androidBroadcastIO);
+			ioProcessors.add(new AndroidActivityIOProcessor(this, this));
 			ioProcessors.add(androidServiceInvokeHandler);
 
 			List<InvokeHandler> invokeHandlers = this.getInvokeHandlers();
@@ -100,11 +113,9 @@ public class FSMServiceImpl extends Service {
 			Log.e(FSM, "Error initiating FSM", e);
 			// throw new RuntimeException("Error initiating FSM", e);
 		}
-
 	}
 
-	@Override
-	public void onDestroy() {
+	protected void stopEngine() {
 		if (engine != null) {
 
 			pushEventToAllSessions(SYSTEM_FSM_ON_DESTROY);
@@ -120,7 +131,6 @@ public class FSMServiceImpl extends Service {
 				Log.e(FSM, "Error stopping fsm engine.", e);
 			}
 		}
-		super.onDestroy();
 	}
 
 	protected int getDefaultXML() throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
@@ -133,26 +143,6 @@ public class FSMServiceImpl extends Service {
 		xmlId = field.getInt(null);
 		Log.d(FSM, "default xmlId: " + xmlId);
 		return xmlId;
-	}
-
-	private List<XppActionParser> getActionParsers() throws Exception {
-		List<XppActionParser> parsers = MetadataUtil.instantiateObjects(FSM_ACTION_PARSER_PREFIX, this);
-
-		return parsers;
-
-	}
-
-	protected List<IOProcessor> getIOProcessors() throws Exception {
-		List<IOProcessor> ioProcessors = MetadataUtil.instantiateObjects(FSM_IO_PROCESSOR_PARSER_PREFIX, this);
-
-		return ioProcessors;
-	}
-
-	private List<InvokeHandler> getInvokeHandlers() throws Exception {
-
-		List<InvokeHandler> invokeHandlers = MetadataUtil.instantiateObjects(FSM_INVOKE_HANDLER_PARSER_PREFIX, this);
-
-		return invokeHandlers;
 	}
 
 	@Override
@@ -168,8 +158,10 @@ public class FSMServiceImpl extends Service {
 		handleIntent(intent);
 	}
 
-	protected BasicEvent createEvent(Intent intent, String eventName) {
+	protected BasicEvent createEventFromIntent(Intent intent) {
 		Object data = null;
+
+		String eventName = getEventNameFromIntent(intent);
 
 		// received data
 		if (intent.hasExtra(FSM_EXTRAS.CONTENT.toString())) {
@@ -187,13 +179,13 @@ public class FSMServiceImpl extends Service {
 			//
 			// handle events to FSM fsm://sessionId/event
 			//
-			if (intent.getData() != null && FSM_ACTIONS.SEND_EVENT_TO_FSM.toString().equals(action)) {
-				// data has the session id and event name
-				Uri data = intent.getData();
+			if (intentIsEventToFSM(intent)) {
 
-				String eventName = data.getPath().substring(data.getPath().lastIndexOf(SLASH) + 1);
-				String sessionId = data.getHost();
-				BasicEvent event = createEvent(intent, eventName);
+				// get session id
+				String sessionId = getEventSessionIdFromIntent(intent);
+
+				// transform intent into FSM event
+				BasicEvent event = createEventFromIntent(intent);
 
 				// if session is informed --> send to this session
 				if (sessionId != null) {
@@ -225,10 +217,10 @@ public class FSMServiceImpl extends Service {
 			// android.resource://com.nosolojava.android.fsm.firstSteps/raw/fsm#testingSessionId
 			//
 
-			else if (intent.getData() != null && FSM_ACTIONS.INIT_FSM_SESSION.toString().equals(action)) {
+			else if (intentIsInitSessionEvent(intent)) {
 
 				// sessionId from fragment (if any)
-				String sessionId = intent.getData().getFragment();
+				String sessionId = getIntentSessionIdForInitSessionEvent(intent);
 
 				// if engine is not already started
 				if (!engine.isSessionActive(sessionId)) {
@@ -273,7 +265,31 @@ public class FSMServiceImpl extends Service {
 		}
 	}
 
-	protected void starStateMachineAsync(String sessionId, String uri) {
+	protected boolean intentIsInitSessionEvent(Intent intent) {
+		return intent.getData() != null && FSM_ACTIONS.INIT_FSM_SESSION.toString().equals(intent.getAction());
+	}
+
+	protected String getEventSessionIdFromIntent(Intent intent) {
+		// fsm://sessionId/eventName
+		return intent.getData().getHost();
+	}
+
+	protected String getEventNameFromIntent(Intent intent) {
+		// fsm://sessionId/eventName
+		return intent.getData().getPath().substring(intent.getData().getPath().lastIndexOf(SLASH) + 1);
+	}
+
+	protected String getIntentSessionIdForInitSessionEvent(Intent intent) {
+		// schema://host/path#sessionId
+		String sessionId = intent.getData().getFragment();
+		return sessionId;
+	}
+
+	protected boolean intentIsEventToFSM(Intent intent) {
+		return intent.getData() != null && FSM_ACTIONS.SEND_EVENT_TO_FSM.toString().equals(intent.getAction());
+	}
+
+	final protected void starStateMachineAsync(String sessionId, String uri) {
 		AsyncTask<String, Void, Boolean> startFsmTask = new AsyncTask<String, Void, Boolean>() {
 
 			@Override
@@ -311,18 +327,17 @@ public class FSMServiceImpl extends Service {
 
 	public void sendSessionInitiatedBroadcast(ContextInstance contextInstance) {
 		String sessionId = contextInstance.getSessionId();
-		AndroidBroadcastIOProcessor.sendBroadcastFromFSM(sessionId, this, FSM_ACTIONS.FSM_SESSION_INITIATED,
-				contextInstance);
+		this.androidBroadcastIO.sendBroadcastFromFSM(sessionId, FSM_ACTIONS.FSM_SESSION_INITIATED, contextInstance);
 	}
 
 	public void sendSessionEndBroadcast(ContextInstance contextInstance) {
+
 		String sessionId = contextInstance.getSessionId();
-		AndroidBroadcastIOProcessor.sendBroadcastFromFSM(sessionId, this, FSM_ACTIONS.FSM_SESSION_ENDED,
-				contextInstance);
+		this.androidBroadcastIO.sendBroadcastFromFSM(sessionId, FSM_ACTIONS.FSM_SESSION_ENDED, contextInstance);
 	}
 
 	public void sendLastFSMSessionConfigBroadcast(ContextInstance contextInstance) {
-		AndroidBroadcastIOProcessor.sendBroadcastFromFSM(contextInstance.getSessionId(), this,
+		this.androidBroadcastIO.sendBroadcastFromFSM(contextInstance.getSessionId(),
 				FSM_ACTIONS.FSM_NEW_SESSION_CONFIG, contextInstance);
 
 	}
@@ -361,6 +376,26 @@ public class FSMServiceImpl extends Service {
 	public void onLowMemory() {
 		pushEventToAllSessions(SYSTEM_FSM_ON_LOW_MEMORY);
 		super.onLowMemory();
+	}
+
+	private List<XppActionParser> getActionParsers() throws Exception {
+		List<XppActionParser> parsers = MetadataUtil.instantiateObjects(FSM_ACTION_PARSER_PREFIX, this);
+
+		return parsers;
+
+	}
+
+	protected List<IOProcessor> getIOProcessors() throws Exception {
+		List<IOProcessor> ioProcessors = MetadataUtil.instantiateObjects(FSM_IO_PROCESSOR_PARSER_PREFIX, this);
+
+		return ioProcessors;
+	}
+
+	private List<InvokeHandler> getInvokeHandlers() throws Exception {
+
+		List<InvokeHandler> invokeHandlers = MetadataUtil.instantiateObjects(FSM_INVOKE_HANDLER_PARSER_PREFIX, this);
+
+		return invokeHandlers;
 	}
 
 }

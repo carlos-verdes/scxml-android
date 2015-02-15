@@ -2,7 +2,7 @@ package com.nosolojava.android.fsm.io;
 
 public enum FSM_EXTRAS {
 
-	CONTENT, TARGET_URI, NAME;
+	CONTENT, TARGET_URI, NAME, SCXML_URI;
 
 	private static final String COM_NOSOLOJAVA_FSM = "com.nosolojava.fsm.EXTRA_";
 

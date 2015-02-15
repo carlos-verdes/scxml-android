@@ -74,7 +74,7 @@ public class AndroidServiceInvokeHandler extends AbstractBasicInvokeHandler impl
 	private static final String LOG_TAG = FSMServiceImpl.FSM;
 
 	private final android.content.Context androidContext;
-	private final StateMachineEngine engine;
+	private StateMachineEngine engine;
 
 	private final ConcurrentHashMap<String, SCXMLServiceConn> connMap = new ConcurrentHashMap<String, AndroidServiceInvokeHandler.SCXMLServiceConn>();
 
@@ -102,7 +102,7 @@ public class AndroidServiceInvokeHandler extends AbstractBasicInvokeHandler impl
 	}
 
 	@Override
-	public void sendMessage(Message message) {
+	public void sendMessageFromFSM(Message message) {
 
 		URI target = message.getTarget();
 
@@ -126,7 +126,7 @@ public class AndroidServiceInvokeHandler extends AbstractBasicInvokeHandler impl
 						}
 					} catch (RemoteException e) {
 						Log.e(LOG_TAG, "Error sending message to android service.", e);
-						engine.pushEvent(invokeId, ERROR_EVENT);
+						sendEventToFSM(invokeId, ERROR_EVENT);
 					}
 				}
 
@@ -142,9 +142,17 @@ public class AndroidServiceInvokeHandler extends AbstractBasicInvokeHandler impl
 
 	@Override
 	public void setEngine(StateMachineEngine engine) {
-		// not needed, the messages will be received via broadcast io receiver
+		this.engine = engine;
 	}
 
+	
+	@Override
+	public void sendEventToFSM(String sessionId, Event event) {
+		if(this.engine.isSessionActive(sessionId)){
+			this.engine.pushEvent(sessionId, event);
+		}
+		
+	}
 	protected class SCXMLServiceConn implements ServiceConnection {
 		private AtomicBoolean connected = new AtomicBoolean(false);
 		private Messenger serviceMessenger = null;
@@ -231,7 +239,7 @@ public class AndroidServiceInvokeHandler extends AbstractBasicInvokeHandler impl
 	@Override
 	public void sendMessageToService(Message message, Context context) {
 		Log.d(LOG_TAG, "send message to service, message: " + message.getName());
-		this.sendMessage(message);
+		this.sendMessageFromFSM(message);
 
 	}
 
