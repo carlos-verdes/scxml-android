@@ -22,7 +22,7 @@ public class FirstStepsFSMService extends FSMServiceImpl {
 
 		Notification notification = new NotificationCompat.Builder(this)
 				// .setCategory(Notification.CATEGORY_SERVICE)
-				.setContentTitle("Android FSM first steps service.").setContentText("This keeps FSM alive")
+				.setContentTitle("Android FSM first steps service.").setContentText("This keeps FSM alive!!")
 				.setContentIntent(pendingIntent).setSmallIcon(com.nosolojava.fsm.android.R.drawable.ic_action_gear)
 				.getNotification();
 

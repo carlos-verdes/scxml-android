@@ -26,13 +26,13 @@
             android:process="com.nosolojava.fsm.android.firstSteps.FSM" >
 
             <!-- Init FSM session -->
-            <intent-filter>
+<!--             <intent-filter>
                 <action android:name="com.nosolojava.fsm.ACTION_INIT_FSM_SESSION" />
             </intent-filter>
-            <!-- send event to FSM -->
-            <intent-filter>
+ -->            <!-- send event to FSM -->
+    <!--         <intent-filter>
                 <action android:name="com.nosolojava.fsm.ACTION_SEND_EVENT_TO_FSM" />
-            </intent-filter>
+            </intent-filter> -->
         </service>
     </application>
 
