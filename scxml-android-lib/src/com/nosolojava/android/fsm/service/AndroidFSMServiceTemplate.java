@@ -44,13 +44,13 @@ public abstract class AndroidFSMServiceTemplate extends Service {
 	}
 
 	protected void answerToFSM(String event){
-		AndroidBroadcastIOProcessor.sendMessageToFSM(this, fsmUri,event);
+		AndroidBroadcastIOProcessor.sendMessageToFSM(this, this.getClass(), fsmUri,event);
 	}
 	protected void answerToFSM(String event,Serializable data){
-		AndroidBroadcastIOProcessor.sendMessageToFSM(this, fsmUri,event,data);
+		AndroidBroadcastIOProcessor.sendMessageToFSM(this, this.getClass(), fsmUri,event,data);
 	}
 	protected void answerToFSM(String event,Parcelable data){
-		AndroidBroadcastIOProcessor.sendMessageToFSM(this, fsmUri,event,data);
+		AndroidBroadcastIOProcessor.sendMessageToFSM(this, this.getClass(), fsmUri,event,data);
 	}
 	
 	public static class IncomingHandler extends Handler {

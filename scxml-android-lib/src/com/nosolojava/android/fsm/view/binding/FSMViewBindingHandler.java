@@ -1,12 +1,10 @@
 package com.nosolojava.android.fsm.view.binding;
 
-import java.io.Serializable;
+import android.app.Activity;
+import android.app.Service;
+import android.content.Intent;
 
 import com.nosolojava.fsm.runtime.ContextInstance;
-
-import android.app.Activity;
-import android.content.Intent;
-import android.view.View;
 
 /**
  * Manage the binding between the FSM and the View in Android. It will be used when the activity handler is parsing the
@@ -20,44 +18,20 @@ import android.view.View;
 public interface FSMViewBindingHandler {
 
 	/**
-	 * Used to identify which type of view manage this handler
-	 * 
-	 * @return view class that this handler is able to manage
-	 */
-	Class<? extends View> getViewClass();
-
-	/**
 	 * Reset method, called before starting the binding register.
 	 */
 	public void reset();
 
-	/**
-	 * This method will be called when the activity is restarted. This is useful to send init event to the FSM like
-	 * "tell me in which state are we now" event.
-	 * 
-	 * @param activity
-	 */
-	public void onInitActivity(Activity activity);
 
 	/**
 	 * This method will be called after the activity is attached to FSM.
 	 */
-	public void onBind(Activity activity, String fsmSessionId);
+	public void onBind(Activity activity, Class<? extends Service> fsmServiceClazz, String fsmSessionId);
 
 	/**
 	 * This method will be called before the activity is detached from FSM.
 	 */
-	public void onUnbind(Activity activity, String fsmSessionId);
-
-	/**
-	 * Register a data binding associated to a view.
-	 * 
-	 * @param view
-	 *            view to be bound
-	 * @param dataBinding
-	 *            value used to do the binding
-	 */
-	public <T extends View> void registerViewBinding(T view, Serializable dataBinding);
+	public void onUnbind(Activity activity, Class<? extends Service> fsmServiceClazz, String fsmSessionId);
 
 	/**
 	 * When an event is received by the activity (from a send FSM action) this method is called.

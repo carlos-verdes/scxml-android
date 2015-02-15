@@ -2,30 +2,36 @@ package com.nosolojava.android.fsm.view;
 
 import java.io.Serializable;
 
-import android.app.Activity;
-import android.net.Uri;
 import android.os.Parcelable;
 
-import com.nosolojava.android.fsm.view.binding.FSMViewBindingHandler;
+import com.nosolojava.android.fsm.view.binding.XPPFSMViewBindingHandler;
+import com.nosolojava.fsm.runtime.ContextInstance;
 
+/**
+ * <p>
+ * This interface is implemented by front classes (Activity, Fragment, FragmentActivity) that are
+ * integrated with a FSM session.
+ * 
+ * @author cverdes
+ *
+ */
 public interface FSMActivityIntegration {
 
-	Activity getAndroidContext();
-	int getCurrentViewId();
-	void setCurrentViewId(int viewId);
-	Uri getFSMUri();
-	void setFSMUri(Uri fsmUri);
-	String getSessionId();
-	
-	void initFSMHandlers();
+	void registerFSMViewBindingHandler(XPPFSMViewBindingHandler handler);
+	boolean unregisterFSMViewBindingHandler(XPPFSMViewBindingHandler handler);
 
-	void bindWithFSM();
-
-	void unbindWithFSM();
-
-	void registerFSMViewBindingHandler(FSMViewBindingHandler handler);
-
-	boolean unregisterFSMViewBindingHandler(FSMViewBindingHandler handler);
+	/**
+	 * This method associates a view with a set of states, so when one of this states is active the activity changes
+	 * it's current view.
+	 * 
+	 * @param view
+	 *            viewId to load
+	 * @param callback
+	 *            callback to init the view (optional)
+	 * @param states
+	 *            state/s associated with this view
+	 */
+	void associateStateView(Integer view, Runnable callback, String... states);
 
 	void pushEventToFSM(String eventName);
 
@@ -33,8 +39,6 @@ public interface FSMActivityIntegration {
 
 	void pushEventToFSM(String eventName, Parcelable data);
 
-//	void handleFsmMessage(Message fsmMessage);
-//
-//	void onNewStateConfig(Set<String> activeStates);
+	void onNewStateConfig(ContextInstance newConfig);
 
 }

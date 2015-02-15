@@ -1,5 +1,6 @@
 package com.nosolojava.android.fsm.io;
 
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 
@@ -22,8 +23,8 @@ public class AndroidActivityIOProcessor extends AndroidBroadcastIOProcessor {
 
 	public static final String NAME = "activity";
 
-	public AndroidActivityIOProcessor(Context androidContext) {
-		super(androidContext);
+	public AndroidActivityIOProcessor(Context androidContext, Service fsmService) {
+		super(androidContext, fsmService);
 	}
 
 	@Override

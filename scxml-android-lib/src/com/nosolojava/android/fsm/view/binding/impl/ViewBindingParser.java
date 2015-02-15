@@ -1,14 +1,15 @@
 package com.nosolojava.android.fsm.view.binding.impl;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.xmlpull.v1.XmlPullParser;
 
 import android.app.Activity;
+import android.app.Service;
 import android.content.res.XmlResourceParser;
 import android.util.Log;
 import android.view.View;
@@ -20,12 +21,13 @@ public class ViewBindingParser {
 	private static final String LOG_TAG = "fsBind";
 	public static final String ID = "id";
 
+	private final List<XPPFSMViewBindingHandler> handlerList = new CopyOnWriteArrayList<XPPFSMViewBindingHandler>();
 	private final Map<String, List<XPPFSMViewBindingHandler>> xppViewHandlers = new HashMap<String, List<XPPFSMViewBindingHandler>>();
 
-	public ViewBindingParser() {
+	public ViewBindingParser(Class<? extends Service> fsmServiceClazz) {
 		super();
 
-		// default bindin handlers
+		// default binding handlers
 
 		// on state change handler
 		registerFSMViewBindingHandler(new OnNewStateBindingHandler());
@@ -74,6 +76,20 @@ public class ViewBindingParser {
 			}
 		} catch (Exception e) {
 			Log.e(LOG_TAG, "Error parsing", e);
+		}
+
+	}
+
+	public void bindHandlers(Activity activity, Class<? extends Service> fsmServiceClazz, String fsmSessionId) {
+		for (XPPFSMViewBindingHandler handler : this.handlerList) {
+			handler.onBind(activity, fsmServiceClazz, fsmSessionId);
+		}
+
+	}
+
+	public void unbindHandlers(Activity activity, Class<? extends Service> fsmServiceClazz, String fsmSessionId) {
+		for (XPPFSMViewBindingHandler handler : this.handlerList) {
+			handler.onUnbind(activity, fsmServiceClazz, fsmSessionId);
 		}
 
 	}
@@ -152,20 +168,22 @@ public class ViewBindingParser {
 		handlers.add(handler);
 		this.xppViewHandlers.put(namespace, handlers);
 
+		this.handlerList.add(handler);
+
 		return true;
 	}
 
 	public Object unregisterFSMViewBindingHandler(XPPFSMViewBindingHandler handler) {
+		this.handlerList.remove(handler);
 		return this.xppViewHandlers.remove(handler.getNamespace());
 	}
 
-	public List<XPPFSMViewBindingHandler> getNosolojavaHandlers(){
+	public List<XPPFSMViewBindingHandler> getNosolojavaHandlers() {
 		return this.xppViewHandlers.get(AbstractFSMViewBindingHandler.BASIC_FSM_VIEW_HANDLER_NAMESPACE);
 
 	}
 
-	public Collection<List<XPPFSMViewBindingHandler>> getHandlerList() {
-		Collection<List<XPPFSMViewBindingHandler>> result = this.xppViewHandlers.values();
-		return result;
+	public List<XPPFSMViewBindingHandler> getHandlerList() {
+		return this.handlerList;
 	}
 }
