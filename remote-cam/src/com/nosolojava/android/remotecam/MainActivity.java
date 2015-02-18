@@ -2,7 +2,6 @@ package com.nosolojava.android.remotecam;
 
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.PersistableBundle;
 
 import com.nosolojava.android.fsm.view.impl.BasicFSMActivity;
 import com.nosolojava.android.remotecam.service.MainFSMService;

@@ -31,7 +31,7 @@
 			<type>aar</type>
 		</dependency>
 	</dependencies>
-	<build>
+		<build>
 		<finalName>${project.artifactId}</finalName>
 		<pluginManagement>
 			<plugins>
