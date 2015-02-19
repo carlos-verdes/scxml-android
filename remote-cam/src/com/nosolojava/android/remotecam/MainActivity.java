@@ -10,7 +10,7 @@ public class MainActivity extends BasicFSMActivity {
 	private static final String DISCONNECTED_STATE = "disconnected-state";
 
 	private static final Uri FSM_URI = Uri
-			.parse("android.resource://com.nosolojava.fsm.android.firstSteps/raw/fsm#remotecamSession");
+			.parse("android.resource://com.nosolojava.android.remotecam/raw/fsm#remotecamSession");
 
 	public MainActivity() {
 

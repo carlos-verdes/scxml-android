@@ -7,14 +7,55 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="com.nosolojava.android.remotecam.MainActivity" 
-    tools:ignore="MissingPrefix">
+    tools:context="com.nosolojava.android.remotecam.MainActivity"
+    tools:ignore="MissingPrefix" >
 
     <TextView
         android:id="@+id/disconectedTestText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="disconnected" 
-        fsm:value="welcome"/>
+        android:text="@string/disconnected"
+        fsm:value="welcome" />
+
+    <!-- cam state -->
+    <TextView
+        android:id="@+id/camStateTag"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/disconectedTestText"
+        android:text="@string/cam_state_" />
+
+    <TextView
+        android:id="@+id/camStateState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/disconectedTestText"
+       	android:layout_toEndOf="@id/camStateTag"
+       	android:layout_marginStart="8dp"
+        fsm:value="cameraState" />
+    <!-- cam devices -->
+    <TextView
+        android:id="@+id/camDevicesTag"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/camStateTag"
+        android:text="@string/devices" />
+
+    <TextView
+        android:id="@+id/camDevicesState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/camStateTag"
+       	android:layout_toEndOf="@id/camDevicesTag"
+       	android:layout_marginStart="8dp"
+        fsm:value="cameraDevices" />
     
+    <Button 
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/camDevicesTag"
+        android:id="@+id/loginButton"
+        android:text="@string/retry"
+        fsm:onclick="view.retry"/>
+
 </RelativeLayout>
