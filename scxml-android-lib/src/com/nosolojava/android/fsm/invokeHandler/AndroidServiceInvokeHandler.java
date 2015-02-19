@@ -31,11 +31,14 @@ import com.nosolojava.fsm.runtime.executable.externalcomm.InvokeInfo;
 import com.nosolojava.fsm.runtime.executable.externalcomm.Message;
 
 /**
- * Used to invoke android services from fsm: <br/>
- * Example:
+ * <p>Used to invoke android services from fsm.
+ * <p>Example with action:
  * {@code <invoke id="chatServiceInvokeId" type="service" autoforward="false" src="action:com.nosolojava.chat.START_SERVICE_ACTION" />}
- * <br/>
- * The src will be used to create the intent, see: {@link AndroidUtils#createIntentForExternalServices(android.content.Context, URI, Context)}. <br/>
+ * 
+ * <p>Example with classname:
+ * {@code <invoke id="chatServiceInvokeId" type="service" autoforward="false" src="class:com.nosolojava.chat.MyChatService" />}
+ * 
+ * <p>The src will be used to create the intent, see: {@link AndroidUtils#createIntentForExternalServices(android.content.Context, URI, Context)}. <br/>
  * the id can be used later to send events to this service (that's the reason why this class implements also
  * IOProcessor.
  * <p>
