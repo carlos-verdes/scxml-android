@@ -35,7 +35,7 @@ import com.nosolojava.fsm.runtime.executable.externalcomm.Message;
  * Example:
  * {@code <invoke id="chatServiceInvokeId" type="service" autoforward="false" src="action:com.nosolojava.chat.START_SERVICE_ACTION" />}
  * <br/>
- * The src will be used to create the intent, see: {@link AndroidUtils#createIntentFromURI(InvokeInfo, Context)}. <br/>
+ * The src will be used to create the intent, see: {@link AndroidUtils#createIntentForExternalServices(android.content.Context, URI, Context)}. <br/>
  * the id can be used later to send events to this service (that's the reason why this class implements also
  * IOProcessor.
  * <p>
@@ -50,12 +50,14 @@ import com.nosolojava.fsm.runtime.executable.externalcomm.Message;
  * 
  * <p>
  * Finally in the called service the message can be handled getting the event name and data from the
- * {@link android.os.Message} like the next code: {@code  <p> public void handleMessage(android.os.Message msg) <br/>
- * Bundle messageData = msg.getData(); <br/>
- * String messageName = messageData.getString(MESSAGE_DATA.NAME.toString()); <br/>
- * String sessionId = messageData.getString(MESSAGE_DATA.SESSION_ID.toString()); <br/>
- * HashMap<String, String> messageBody= (HashMap<String, String>)
- * messageData.getSerializable(MESSAGE_DATA.CONTENT.toString());
+ * {@link android.os.Message} like the next code: 
+ * <p>{@code  public void handleMessage(android.os.Message msg){
+ * <br/>&nbsp;&nbsp;&nbsp;{@code Bundle messageData = msg.getData();}
+ * <br/>&nbsp;&nbsp;&nbsp;{@code String messageName = messageData.getString(MESSAGE_DATA.NAME.toString());}
+ * <br/>&nbsp;&nbsp;&nbsp;{@code String sessionId = messageData.getString(MESSAGE_DATA.SESSION_ID.toString());}
+ * <br/>&nbsp;&nbsp;&nbsp;{@code HashMap<String, String> messageBody= (HashMap<String, String>)}
+ * <br/>&nbsp;&nbsp;&nbsp;{@code messageData.getSerializable(MESSAGE_DATA.CONTENT.toString());}
+ * <br/>}
  *
  * @author Carlos Verdes
  *
