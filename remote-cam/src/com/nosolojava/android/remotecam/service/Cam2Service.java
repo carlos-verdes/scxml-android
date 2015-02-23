@@ -64,6 +64,25 @@ public class Cam2Service extends Service {
 
 		sendEventToFSM("service.camera.getDevices.result", devicesIds);
 	}
+	
+	
+	@Override
+	public void onCreate() {
+		super.onCreate();
+
+		logI("creating cam service");
+		manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+
+	}
+	
+
+	@Override
+	public void onDestroy() {
+		logI("destroying cam service");
+		super.onDestroy();
+	}
+
+
 
 	/**
 	 * When binding to the service, we return an interface to our messenger for sending messages to the service.
@@ -75,8 +94,6 @@ public class Cam2Service extends Service {
 		Toast.makeText(getApplicationContext(), "binding", Toast.LENGTH_SHORT).show();
 
 		this.sessionUri = intent.getData();
-
-		manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
 
 		sendEventToFSM("service.camera.ready");
 
@@ -91,13 +108,7 @@ public class Cam2Service extends Service {
 		AndroidBroadcastIOProcessor.sendMessageToFSM(this, MainFSMService.class, this.sessionUri, event, data);
 	}
 
-	@Override
-	public void onCreate() {
-		super.onCreate();
 
-		logI("creating cam service");
-
-	}
 
 	private void logI(String message) {
 		Log.i(REMOTE_CAM_LOG_TAG, message);
