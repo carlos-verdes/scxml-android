@@ -8,6 +8,8 @@
 	<packaging>pom</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<it-plugin.version>4.1.1</it-plugin.version>
+		<android.sdk.platform.version>19</android.sdk.platform.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -58,74 +60,71 @@
 		<sourceDirectory>src</sourceDirectory>
 		<pluginManagement>
 			<plugins>
+				<!-- jar signer -->
 				<plugin>
-					<groupId>com.jayway.maven.plugins.android.generation2</groupId>
-					<artifactId>android-maven-plugin</artifactId>
-					<extensions>true</extensions>
-					<version>3.8.2</version>
+					<artifactId>maven-jarsigner-plugin</artifactId>
+					<version>1.2</version>
 				</plugin>
-				<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
 				<plugin>
-					<groupId>org.eclipse.m2e</groupId>
-					<artifactId>lifecycle-mapping</artifactId>
-					<version>1.0.0</version>
+					<artifactId>maven-resources-plugin</artifactId>
+					<version>2.5</version>
 					<configuration>
-						<lifecycleMappingMetadata>
-							<pluginExecutions>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>
-											com.jayway.maven.plugins.android.generation2
-										</groupId>
-										<artifactId>
-											android-maven-plugin
-										</artifactId>
-										<versionRange>
-											[3.8.2,)
-										</versionRange>
-										<goals>
-											<goal>consume-aar</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore></ignore>
-									</action>
-								</pluginExecution>
-							</pluginExecutions>
-						</lifecycleMappingMetadata>
+						<encoding>UTF-8</encoding>
 					</configuration>
+				</plugin>
+				<!-- android maven plugin -->
+				<plugin>
+					<groupId>com.simpligility.maven.plugins</groupId>
+					<artifactId>android-maven-plugin</artifactId>
+					<version>${it-plugin.version}</version>
+					<extensions>true</extensions>
+					<configuration>
+						<sdk>
+							<platform>${android.sdk.platform.version}</platform>
+						</sdk>
+						<emulator>
+							<avd>23</avd>
+							<wait>10000</wait>
+							<!--<options>-no-skin</options> -->
+						</emulator>
+						<zipalign>
+							<verbose>true</verbose>
+						</zipalign>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>build-helper-maven-plugin</artifactId>
+					<version>1.9.1</version>
+				</plugin>
+				<!-- compiler plugin -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.2</version>
+					<configuration>
+						<source>1.6</source>
+						<target>1.6</target>
+						<meminitial>128m</meminitial>
+						<maxmem>1024m</maxmem>
+					</configuration>
+				</plugin>
+				<!-- source plugin -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-source-plugin</artifactId>
+					<version>2.4</version>
+					<executions>
+						<execution>
+							<id>attach-sources</id>
+							<goals>
+								<goal>jar</goal>
+							</goals>
+						</execution>
+					</executions>
 				</plugin>
 			</plugins>
 		</pluginManagement>
-		<plugins>
-			<!-- compiler plugin -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.2</version>
-				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
-					<meminitial>128m</meminitial>
-					<maxmem>1024m</maxmem>
-				</configuration>
-			</plugin>
-			<!-- source plugin -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-				<version>2.4</version>
-				<executions>
-					<execution>
-						<id>attach-sources</id>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-
-		</plugins>
 	</build>
 	<repositories>
 		<!-- bugsence repo -->
